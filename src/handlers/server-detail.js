@@ -831,6 +831,8 @@ export async function handleServerDetail(request, env, sys, viewId) {
             },
             tooltipFormat: 'yyyy-MM-dd HH:mm:ss'
           },
+          min: 'dataMin',
+          max: 'dataMax',
           ticks: {
             maxTicksLimit: 8,
             color: '#5c6d82',
@@ -879,7 +881,8 @@ export async function handleServerDetail(request, env, sys, viewId) {
         line: { 
           tension: 0.4,
           borderWidth: 1.5,
-          fill: false
+          fill: false,
+          spanGaps: true
         }
       }
     });
@@ -1084,6 +1087,9 @@ export async function handleServerDetail(request, env, sys, viewId) {
       
       const dataset = chart.data.datasets[datasetIndex];
       
+      // 计算完整的时间范围（从 hours 小时前到现在）
+      const startTime = Date.now() - currentHours * 60 * 60 * 1000;
+      
       // 根据数据量动态调整采样，防止图表过于拥挤
       let sampledData = dataPoints;
       if (dataPoints.length > 500) {
@@ -1091,10 +1097,36 @@ export async function handleServerDetail(request, env, sys, viewId) {
         sampledData = dataPoints.filter((_, i) => i % step === 0);
       }
       
-      dataset.data = sampledData.map(d => ({
+      // 将数据转换为时间戳格式
+      const processedData = sampledData.map(d => ({
         x: new Date(d[xField]).getTime(),
         y: parseFloat(d[yField]) || 0
       }));
+      
+      // 确保数据按时间排序
+      processedData.sort((a, b) => a.x - b.x);
+      
+      // 创建完整时间范围的数据数组
+      const completeData = [];
+      
+      // 如果第一个数据点晚于开始时间，添加空白点
+      if (processedData.length > 0 && processedData[0].x > startTime) {
+        completeData.push({ x: startTime, y: null });
+      }
+      
+      // 添加实际数据点
+      completeData.push(...processedData);
+      
+      // 如果最后一个数据点早于现在，添加空白点到当前时间
+      if (processedData.length > 0) {
+        const lastTimestamp = processedData[processedData.length - 1].x;
+        const now = Date.now();
+        if (lastTimestamp < now) {
+          completeData.push({ x: now, y: null });
+        }
+      }
+      
+      dataset.data = completeData;
       
       chart.update('none');
     }
