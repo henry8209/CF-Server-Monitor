@@ -663,10 +663,10 @@ const initCharts = () => {
       type: 'line',
       data: {
         datasets: [
-          { label: 'CT', data: [], borderColor: '#00d4aa', backgroundColor: 'transparent', tension: 0.3, borderWidth: 1.5, pointRadius: 0, hoverRadius: 5, spanGaps: false },
-          { label: 'CU', data: [], borderColor: '#ffb870', backgroundColor: 'transparent', tension: 0.3, borderWidth: 1.5, pointRadius: 0, hoverRadius: 5, spanGaps: false },
-          { label: 'CM', data: [], borderColor: '#4da6ff', backgroundColor: 'transparent', tension: 0.3, borderWidth: 1.5, pointRadius: 0, hoverRadius: 5, spanGaps: false },
-          { label: 'BD', data: [], borderColor: '#b392f0', backgroundColor: 'transparent', tension: 0.3, borderWidth: 1.5, pointRadius: 0, hoverRadius: 5, spanGaps: false }
+          { label: 'CF', data: [], borderColor: '#00d4aa', backgroundColor: 'transparent', tension: 0.3, borderWidth: 1.5, pointRadius: 0, hoverRadius: 5, spanGaps: false },
+          { label: 'GO', data: [], borderColor: '#ffb870', backgroundColor: 'transparent', tension: 0.3, borderWidth: 1.5, pointRadius: 0, hoverRadius: 5, spanGaps: false },
+          { label: 'OP', data: [], borderColor: '#4da6ff', backgroundColor: 'transparent', tension: 0.3, borderWidth: 1.5, pointRadius: 0, hoverRadius: 5, spanGaps: false },
+          { label: 'Q9', data: [], borderColor: '#b392f0', backgroundColor: 'transparent', tension: 0.3, borderWidth: 1.5, pointRadius: 0, hoverRadius: 5, spanGaps: false }
         ]
       },
       options: createChartOptions(' ms', true)
@@ -678,10 +678,10 @@ const initCharts = () => {
       type: 'line',
       data: {
         datasets: [
-          { label: 'CT', data: [], borderColor: '#00d4aa', backgroundColor: 'transparent', tension: 0.3, borderWidth: 1.5, pointRadius: 0, hoverRadius: 5, spanGaps: false },
-          { label: 'CU', data: [], borderColor: '#ffb870', backgroundColor: 'transparent', tension: 0.3, borderWidth: 1.5, pointRadius: 0, hoverRadius: 5, spanGaps: false },
-          { label: 'CM', data: [], borderColor: '#4da6ff', backgroundColor: 'transparent', tension: 0.3, borderWidth: 1.5, pointRadius: 0, hoverRadius: 5, spanGaps: false },
-          { label: 'BD', data: [], borderColor: '#b392f0', backgroundColor: 'transparent', tension: 0.3, borderWidth: 1.5, pointRadius: 0, hoverRadius: 5, spanGaps: false }
+          { label: 'CF', data: [], borderColor: '#00d4aa', backgroundColor: 'transparent', tension: 0.3, borderWidth: 1.5, pointRadius: 0, hoverRadius: 5, spanGaps: false },
+          { label: 'GO', data: [], borderColor: '#ffb870', backgroundColor: 'transparent', tension: 0.3, borderWidth: 1.5, pointRadius: 0, hoverRadius: 5, spanGaps: false },
+          { label: 'OP', data: [], borderColor: '#4da6ff', backgroundColor: 'transparent', tension: 0.3, borderWidth: 1.5, pointRadius: 0, hoverRadius: 5, spanGaps: false },
+          { label: 'Q9', data: [], borderColor: '#b392f0', backgroundColor: 'transparent', tension: 0.3, borderWidth: 1.5, pointRadius: 0, hoverRadius: 5, spanGaps: false }
         ]
       },
       options: createChartOptions('%', true)
