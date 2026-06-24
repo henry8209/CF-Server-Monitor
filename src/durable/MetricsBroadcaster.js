@@ -1,14 +1,14 @@
-// Durable Object: 服务器监控指标广播中心
-// 负责维护 WebSocket 连接并在收到新指标时向订阅者实时推送
+// Durable Object: 伺服器監控指標廣播中心
+// 負責維護 WebSocket 連線並在收到新指標時向訂閱者即時推送
 //
-// - 连接通过 /api/ws?subscribe=<scope> 建立
-//   scope = 'all'        -> 订阅所有服务器更新（首页）
-//   scope = <serverId>   -> 只订阅某台服务器的更新（详情页）
+// - 連線通過 /api/ws?subscribe=<scope> 建立
+//   scope = 'all'        -> 訂閱所有伺服器更新（首頁）
+//   scope = <serverId>   -> 只訂閱某臺伺服器的更新（詳情頁）
 //
-// - 后端 /update 处理器在成功写入 DB 后，调用 /__do_push/<id>
-//   由本 DO 向所有订阅者广播刚收到的指标。
+// - 後端 /update 處理器在成功寫入 DB 後，呼叫 /__do_push/<id>
+//   由本 DO 向所有訂閱者廣播剛收到的指標。
 //
-// - 心跳：每 25s 向客户端发送 ping，避免中间代理断连。
+// - 心跳：每 25s 向客戶端傳送 ping，避免中間代理斷連。
 
 function parseAllowedOrigins(corsAllowedOrigins) {
   if (!corsAllowedOrigins || corsAllowedOrigins.trim() === '') {
@@ -24,26 +24,26 @@ export class MetricsBroadcaster {
   constructor(state, env) {
     this.state = state;
     this.env = env;
-    // 存储所有活跃 WebSocket：{ id: { ws, scope, createdAt } }
+    // 儲存所有活躍 WebSocket：{ id: { ws, scope, createdAt } }
     this.sessions = new Map();
     this.nextSessionId = 0;
 
-    // 心跳定时器
+    // 心跳定時器
     this.heartbeatTimer = null;
     this._ensureHeartbeat();
 
-    // 可选：某些运行时在 state 上暴露 blockConcurrencyWhile
-    // 用于在实例首次启动时串行完成必要初始化，例如从持久化存储回放最新状态
+    // 可選：某些執行時在 state 上暴露 blockConcurrencyWhile
+    // 用於在例項首次啟動時序列完成必要初始化，例如從持久化儲存回放最新狀態
     if (this.state && typeof this.state.blockConcurrencyWhile === 'function') {
       this.state.blockConcurrencyWhile(async () => {
-        // 预留：未来可在这里做持久化的最新状态回放
+        // 預留：未來可在這裡做持久化的最新狀態回放
       });
     }
   }
 
   _ensureHeartbeat() {
     if (this.heartbeatTimer) return;
-    // Workers 内的 setTimeout 最长 ~30s 可用；heartbeat 25s 比较稳
+    // Workers 內的 setTimeout 最長 ~30s 可用；heartbeat 25s 比較穩
     this.heartbeatTimer = setTimeout(() => {
       this.heartbeatTimer = null;
       if (this.sessions.size === 0) return;
@@ -58,7 +58,7 @@ export class MetricsBroadcaster {
     }, 25000);
   }
 
-  // 根据 scope 判断会话是否需要接收某台服务器的更新
+  // 根據 scope 判斷會話是否需要接收某臺伺服器的更新
   _shouldDeliver(sessionScope, serverId) {
     if (!sessionScope) return false;
     if (sessionScope === 'all') return true;
@@ -107,7 +107,7 @@ export class MetricsBroadcaster {
       
       const scope = (url.searchParams.get('subscribe') || 'all').toLowerCase();
 
-      // @ts-ignore - Cloudflare Workers 运行时提供 WebSocketPair
+      // @ts-ignore - Cloudflare Workers 執行時提供 WebSocketPair
       const pair = new WebSocketPair();
       const [client, server] = Object.values(pair);
       server.accept();
@@ -123,7 +123,7 @@ export class MetricsBroadcaster {
       server.addEventListener('close', cleanup);
       server.addEventListener('error', cleanup);
       server.addEventListener('message', (event) => {
-        // 简单处理客户端的 ping
+        // 簡單處理客戶端的 ping
         try {
           const msg = JSON.parse(event.data || '{}');
           if (msg && msg.type === 'pong') return;
@@ -135,7 +135,7 @@ export class MetricsBroadcaster {
         } catch (_) {}
       });
 
-      // 立即发送一条 "hello" 让客户端确认连接成功
+      // 立即傳送一條 "hello" 讓客戶端確認連線成功
       try {
         server.send(JSON.stringify({
           type: 'hello',
@@ -151,7 +151,7 @@ export class MetricsBroadcaster {
       return new Response(null, { status: 101, webSocket: client, headers: responseHeaders });
     }
 
-    // 2) 内部广播入口：/update 成功后由 Worker 内部转发
+    // 2) 內部廣播入口：/update 成功後由 Worker 內部轉發
     //    path: /push/<serverId>   body: { metrics } JSON
     if (method === 'POST' && (path.startsWith('/push/') || path.includes('/push/'))) {
       const parts = path.split('/push/');
@@ -179,7 +179,7 @@ export class MetricsBroadcaster {
       });
     }
 
-    // 3) 健康检查
+    // 3) 健康檢查
     if (method === 'GET' && (path === '/health' || path.endsWith('/health'))) {
       return new Response(JSON.stringify({ ok: true, subscribers: this.sessions.size }), {
         headers: { 'Content-Type': 'application/json' }

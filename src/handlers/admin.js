@@ -101,8 +101,8 @@ async function fetchCloudflareUsage(token, accountId, range) {
 }
 
 async function getD1DailyUsage(token, accountId) {
-  if (!token) throw new Error('请先配置 Cloudflare Token');
-  if (!accountId) throw new Error('请先配置 Cloudflare 用户 ID / Account ID');
+  if (!token) throw new Error('請先配置 Cloudflare Token');
+  if (!accountId) throw new Error('請先配置 Cloudflare 使用者 ID / Account ID');
 
   const todayRange = getUtcTodayRange();
   const last24Range = getLast24HoursRange();
@@ -283,7 +283,7 @@ export async function handleAdminAPI(request, env, sys) {
     else if (data.action === 'save_settings') {
       const settings = data.settings || {};
 
-      // 如果 turnstile_enabled 开启，验证 turnstile_site_key 和 turnstile_secret_key 都不为空
+      // 如果 turnstile_enabled 開啟，驗證 turnstile_site_key 和 turnstile_secret_key 都不為空
       if (settings.turnstile_enabled === 'true' || settings.turnstile_enabled === true) {
         if (!settings.turnstile_site_key || settings.turnstile_site_key.trim().length === 0) {
           return createBadRequestResponse('Turnstile Site Key is required when Turnstile is enabled');
@@ -293,7 +293,7 @@ export async function handleAdminAPI(request, env, sys) {
         }
       }
 
-      // 如果 tg_notify 或 expire_reminder 开启，验证 tg_bot_token 不为空
+      // 如果 tg_notify 或 expire_reminder 開啟，驗證 tg_bot_token 不為空
       if (settings.tg_notify === 'true' || settings.expire_reminder === 'true') {
         if (!settings.tg_bot_token || settings.tg_bot_token.trim().length === 0) {
           return createBadRequestResponse('Telegram Bot Token is required when notifications are enabled');
@@ -335,7 +335,7 @@ export async function handleAdminAPI(request, env, sys) {
     else if (data.action === 'add') {
       const name = data.name || 'New Server';
       if (!isValidName(name)) {
-        return createBadRequestResponse('服务器名称无效');
+        return createBadRequestResponse('伺服器名稱無效');
       }
       
       const id = crypto.randomUUID();
@@ -361,7 +361,7 @@ export async function handleAdminAPI(request, env, sys) {
     else if (data.action === 'delete') {
       const { id } = data;
       if (!id || !isValidUUID(id)) {
-        return createBadRequestResponse('服务器 ID 无效');
+        return createBadRequestResponse('伺服器 ID 無效');
       }
       
       await env.DB.prepare('DELETE FROM metrics_history WHERE server_id = ?').bind(id).run();
@@ -378,12 +378,12 @@ export async function handleAdminAPI(request, env, sys) {
     else if (data.action === 'save_order') {
       const { orders } = data;
       if (!orders || !Array.isArray(orders) || orders.length === 0) {
-        return createBadRequestResponse('缺少排序数据');
+        return createBadRequestResponse('缺少排序資料');
       }
       
       for (let i = 0; i < orders.length; i++) {
         if (!isValidUUID(orders[i])) {
-          return createBadRequestResponse('排序数据包含无效 ID');
+          return createBadRequestResponse('排序資料包含無效 ID');
         }
         await env.DB.prepare('UPDATE servers SET sort_order = ? WHERE id = ?').bind(i, orders[i]).run();
       }
@@ -398,7 +398,7 @@ export async function handleAdminAPI(request, env, sys) {
     else if (data.action === 'edit') {
       const { id, name, server_group, price, expire_date, bandwidth, traffic_limit, traffic_calc_type, reset_day, report_interval, ping_mode, is_hidden } = data;
       if (!id || !isValidUUID(id)) {
-        return createBadRequestResponse('服务器 ID 无效');
+        return createBadRequestResponse('伺服器 ID 無效');
       }
       
       try {
@@ -456,12 +456,12 @@ export async function handleAdminAPI(request, env, sys) {
     else if (data.action === 'batch_delete') {
       const { ids } = data;
       if (!ids || !Array.isArray(ids) || ids.length === 0) {
-        return createBadRequestResponse('请选择要删除的服务器');
+        return createBadRequestResponse('請選擇要刪除的伺服器');
       }
       
       for (const id of ids) {
         if (!isValidUUID(id)) {
-          return createBadRequestResponse('包含无效的服务器 ID');
+          return createBadRequestResponse('包含無效的伺服器 ID');
         }
       }
       
@@ -483,7 +483,7 @@ export async function handleAdminAPI(request, env, sys) {
     return createBadRequestResponse('未知操作');
     
   } catch (e) {
-    console.error('Admin API 错误:', e);
+    console.error('Admin API 錯誤:', e);
     return createErrorResponse(e);
   }
 }

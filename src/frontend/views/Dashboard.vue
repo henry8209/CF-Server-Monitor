@@ -68,7 +68,7 @@
         <div class="loading-text">$ {{ trans.loading }}</div>
       </div>
       <div v-else-if="groupedServers.length === 0" class="empty-state">
-        [!] {{ trans.noServer }}，请在 <router-link to="/admin" class="admin-link-color">{{ trans.backToAdmin }}</router-link> 中添加
+        [!] {{ trans.noServer }}，請在 <router-link to="/admin" class="admin-link-color">{{ trans.backToAdmin }}</router-link> 中新增
       </div>
       <div v-else>
         <div v-for="group in groupedServers" :key="group.name" class="group-section">
@@ -277,7 +277,7 @@ const getUpdateTime = (lastUpdated) => {
   const diff = now.value - date.getTime()
 
   const lang = currentLang.value
-  // 时间差为负或小于1秒时，显示0秒前
+  // 時間差為負或小於1秒時，顯示0秒前
   if (diff < 1000) {
     return lang === 'zh' ? `0${trans.value.secondsAgo}` : `0 ${trans.value.secondsAgo}`
   }
@@ -320,17 +320,17 @@ const getTrafficUsagePercent = (server) => {
   return percent.toFixed(1)
 }
 
-// 用最新数据增量更新单台服务器信息
-// 无论后端 last_updated 是否变化，都用前端收到推送的时间更新 last_updated，
-// 保证实时时间列（"xx:xx:xx ago"）在每次推送时都刷新。
+// 用最新資料增量更新單臺伺服器資訊
+// 無論後端 last_updated 是否變化，都用前端收到推送的時間更新 last_updated，
+// 保證即時時間列（"xx:xx:xx ago"）在每次推送時都重新整理。
 const mergeServerUpdate = (data) => {
   if (!data || !data.id) return false
   const idx = servers.value.findIndex(s => s.id === data.id)
   if (idx >= 0) {
-    // 已有服务器：合并字段，同时更新 last_updated 为前端收到时间
+    // 已有伺服器：合併欄位，同時更新 last_updated 為前端收到時間
     servers.value[idx] = { ...servers.value[idx], ...data, last_updated: Date.now() }
   } else {
-    // 新服务器：加入列表
+    // 新伺服器：加入列表
     servers.value.push({ ...data, name: data.id, last_updated: Date.now() })
   }
   return true
@@ -422,9 +422,9 @@ const refreshData = async () => {
 }
 
 // -------------------------------------------------------------------------
-// 实时推送：
-//   - 订阅 "all"，收到任何服务器的更新都会合并对应 server 的指标
-//   - WS 连上后关闭 60s 兜底轮询；断开后临时开启作为降级（WS 重连成功后再次清除）
+// 即時推送：
+//   - 訂閱 "all"，收到任何伺服器的更新都會合並對應 server 的指標
+//   - WS 連上後關閉 60s 兜底輪詢；斷開後臨時開啟作為降級（WS 重連成功後再次清除）
 // -------------------------------------------------------------------------
 let liveSockets = []
 let refreshInterval = null
@@ -441,7 +441,7 @@ const applyLiveUpdate = ({ serverId, data }) => {
 const startLiveSocket = () => {
   const bases = getApiBases()
 
-  // 如果没有配置多个 API bases，使用原来的单连接方式
+  // 如果沒有配置多個 API bases，使用原來的單連線方式
   if (bases.length === 0) {
     liveSockets = [createLiveSocket('all', {
       onUpdate: applyLiveUpdate,
@@ -457,19 +457,19 @@ const startLiveSocket = () => {
     return
   }
 
-  // 为每个 API base 创建独立的 WebSocket 连接
+  // 為每個 API base 建立獨立的 WebSocket 連線
   liveSockets = bases.map((_, index) => {
     return createLiveSocket('all', {
       onUpdate: applyLiveUpdate,
       onStatus: ({ connected }) => {
-        // 只要有一个连接成功，就认为实时推送可用
+        // 只要有一個連線成功，就認為即時推送可用
         const anyConnected = liveSockets.some(s => s && s.isConnected)
         liveConnected.value = anyConnected
 
         if (anyConnected) {
           if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null }
         } else if (!refreshInterval) {
-          // 所有连接都断开时，启用降级轮询
+          // 所有連線都斷開時，啟用降級輪詢
           refreshInterval = setInterval(refreshData, 60000)
         }
       }
@@ -614,7 +614,7 @@ onMounted(() => {
   refreshData()
   startLiveSocket()
 
-  // 每秒更新 now 变量，使相对时间实时刷新
+  // 每秒更新 now 變數，使相對時間即時重新整理
   timeUpdateInterval = setInterval(() => {
     now.value = Date.now()
   }, 1000)

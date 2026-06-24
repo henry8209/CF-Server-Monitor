@@ -41,19 +41,19 @@ if (fs.existsSync(publicDir)) {
   console.log('Copied all static assets');
 }
 
-// 替换时间戳
+// 替換時間戳
 console.log('Replacing timestamp in index.html...');
 const indexHtmlPath = path.join(distDir, 'index.html');
 if (fs.existsSync(indexHtmlPath)) {
   const timestamp = Date.now();
   let html = fs.readFileSync(indexHtmlPath, 'utf8');
-  // 替换所有 ?t= 后面的数字为新的时间戳
+  // 替換所有 ?t= 後面的數字為新的時間戳
   html = html.replace(/(\?t=)\d+/g, `$1${timestamp}`);
   fs.writeFileSync(indexHtmlPath, html, 'utf8');
   console.log(`Updated timestamp to ${timestamp}`);
 }
 
-// 重命名为 dashboard.html，避免 ASSETS 直接拦截首页
+// 重新命名為 dashboard.html，避免 ASSETS 直接攔截首頁
 const dashboardHtmlPath = path.join(distDir, 'dashboard.html');
 if (fs.existsSync(indexHtmlPath)) {
   fs.renameSync(indexHtmlPath, dashboardHtmlPath);

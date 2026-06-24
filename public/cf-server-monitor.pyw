@@ -32,9 +32,9 @@ MAX_LOG_SIZE = 2 * 1024 * 1024
 LOG_BACKUP_COUNT = 3
 
 DEFAULT_CONFIG = {
-    "server_id": "服务器ID",
-    "secret": "连接密匙",
-    "worker_url": "上传网站",
+    "server_id": "伺服器ID",
+    "secret": "連線密匙",
+    "worker_url": "上傳網站",
     "report_interval": 60,
     "silent_start": False,
     "ping_type": "tcp",
@@ -166,7 +166,7 @@ def ensure_deps():
     if not missing:
         return True
 
-    log(f"缺少依赖，正在安装: {', '.join(missing)}")
+    log(f"缺少依賴，正在安裝: {', '.join(missing)}")
     cmd = f'"{sys.executable}" -m pip install {" ".join(missing)} -q'
     result = run_cmd(cmd)
     if result.returncode != 0:
@@ -235,15 +235,15 @@ def create_startup_task():
     result = run_cmd(cmd)
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or result.stdout.strip())
-    log("已开启跟随系统自动启动。")
+    log("已開啟跟隨系統自動啟動。")
 
 
 def delete_startup_task():
     result = run_cmd(f'schtasks /Delete /TN "{TASK_NAME}" /F')
     if result.returncode == 0:
-        log("已关闭跟随系统自动启动。")
+        log("已關閉跟隨系統自動啟動。")
     else:
-        log("自动启动任务不存在或删除失败。")
+        log("自動啟動任務不存在或刪除失敗。")
 
 
 def http_post_json(url, payload):
@@ -262,7 +262,7 @@ def http_post_json(url, payload):
             resp.read()
         return True
     except Exception as e:
-        log(f"上报失败: {e}")
+        log(f"上報失敗: {e}")
         return False
 
 
@@ -496,7 +496,7 @@ def probe_loop(status_callback=None):
     ping_type = config.get("ping_type", "tcp").strip().lower() or "tcp"
 
     if not server_id or not secret or not worker_url:
-        log("配置不完整，请先填写并保存。")
+        log("配置不完整，請先填寫並儲存。")
         return
 
     previous_net = {}
@@ -519,7 +519,7 @@ def probe_loop(status_callback=None):
     except Exception:
         pass
 
-    log("探针已启动。")
+    log("探針已啟動。")
 
     while not stop_event.is_set():
         loop_start = time.time()
@@ -565,9 +565,9 @@ def probe_loop(status_callback=None):
                 status_callback(gui_data, ok, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
             if ok:
-                log("上报成功。")
+                log("上報成功。")
         except Exception as e:
-            log(f"主循环异常: {e}")
+            log(f"主迴圈異常: {e}")
             if status_callback:
                 status_callback({}, False, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
@@ -575,13 +575,13 @@ def probe_loop(status_callback=None):
         sleep_time = max(report_interval - used, 1)
         stop_event.wait(sleep_time)
 
-    log("探针已停止。")
+    log("探針已停止。")
 
 
 class ProbeGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("CF服务器监控探针")
+        self.root.title("CF伺服器監控探針")
         self.root.geometry("1140x780")
         self.root.minsize(1020, 700)
 
@@ -596,9 +596,9 @@ class ProbeGUI:
         self.silent_start_var = tk.BooleanVar(value=self.config.get("silent_start", True))
         self.autostart_var = tk.BooleanVar(value=task_exists())
 
-        self.status_var = tk.StringVar(value="未启动")
+        self.status_var = tk.StringVar(value="未啟動")
         self.last_report_var = tk.StringVar(value="-")
-        self.online_var = tk.StringVar(value="离线")
+        self.online_var = tk.StringVar(value="離線")
 
         self.build_ui()
         self.root.protocol("WM_DELETE_WINDOW", self.hide_window)
@@ -615,25 +615,25 @@ class ProbeGUI:
         right.pack(side=tk.RIGHT, fill=tk.Y, padx=(14, 0))
         right.pack_propagate(False)
 
-        form = ttk.LabelFrame(left, text="探针配置", padding=12)
+        form = ttk.LabelFrame(left, text="探針配置", padding=12)
         form.pack(fill=tk.X)
 
-        ttk.Label(form, text="服务器ID：").grid(row=0, column=0, sticky=tk.W, pady=5)
+        ttk.Label(form, text="伺服器ID：").grid(row=0, column=0, sticky=tk.W, pady=5)
         ttk.Entry(form, textvariable=self.server_id_var).grid(row=0, column=1, sticky=tk.EW, pady=5)
 
         ttk.Label(form, text="密匙：").grid(row=1, column=0, sticky=tk.W, pady=5)
         ttk.Entry(form, textvariable=self.secret_var, show="*").grid(row=1, column=1, sticky=tk.EW, pady=5)
 
-        ttk.Label(form, text="上报链接：").grid(row=2, column=0, sticky=tk.W, pady=5)
+        ttk.Label(form, text="上報連結：").grid(row=2, column=0, sticky=tk.W, pady=5)
         ttk.Entry(form, textvariable=self.url_var).grid(row=2, column=1, sticky=tk.EW, pady=5)
 
-        ttk.Label(form, text="上报间隔：").grid(row=3, column=0, sticky=tk.W, pady=5)
+        ttk.Label(form, text="上報間隔：").grid(row=3, column=0, sticky=tk.W, pady=5)
         interval_frame = ttk.Frame(form)
         interval_frame.grid(row=3, column=1, sticky=tk.W, pady=5)
         ttk.Entry(interval_frame, textvariable=self.interval_var, width=12).pack(side=tk.LEFT)
         ttk.Label(interval_frame, text="秒").pack(side=tk.LEFT, padx=(6, 0))
 
-        ttk.Label(form, text="延时模式：").grid(row=4, column=0, sticky=tk.W, pady=5)
+        ttk.Label(form, text="延時模式：").grid(row=4, column=0, sticky=tk.W, pady=5)
         ping_frame = ttk.Frame(form)
         ping_frame.grid(row=4, column=1, sticky=tk.W, pady=5)
         ttk.Radiobutton(ping_frame, text="TCP", variable=self.ping_type_var, value="tcp").pack(side=tk.LEFT)
@@ -646,14 +646,14 @@ class ProbeGUI:
 
         ttk.Checkbutton(
             options,
-            text="跟随系统自动启动",
+            text="跟隨系統自動啟動",
             variable=self.autostart_var,
             command=self.toggle_autostart,
         ).pack(side=tk.LEFT)
 
         ttk.Checkbutton(
             options,
-            text="开机静默启动（不弹主界面）",
+            text="開機靜默啟動（不彈主介面）",
             variable=self.silent_start_var,
             command=self.save_quick,
         ).pack(side=tk.LEFT, padx=12)
@@ -661,21 +661,21 @@ class ProbeGUI:
         toolbar = ttk.Frame(left)
         toolbar.pack(fill=tk.X, pady=(6, 10))
 
-        ttk.Button(toolbar, text="保存配置", command=lambda: self.save(show_msg=True)).pack(side=tk.LEFT)
-        ttk.Button(toolbar, text="导入配置", command=self.import_config).pack(side=tk.LEFT, padx=6)
-        ttk.Button(toolbar, text="导出配置", command=self.export_config).pack(side=tk.LEFT, padx=6)
-        ttk.Button(toolbar, text="启动探针", command=self.start_probe).pack(side=tk.LEFT, padx=6)
-        ttk.Button(toolbar, text="停止探针", command=self.stop_probe).pack(side=tk.LEFT, padx=6)
-        ttk.Button(toolbar, text="隐藏窗口", command=self.hide_window).pack(side=tk.LEFT, padx=6)
-        ttk.Button(toolbar, text="退出程序", command=self.exit_app).pack(side=tk.RIGHT)
+        ttk.Button(toolbar, text="儲存配置", command=lambda: self.save(show_msg=True)).pack(side=tk.LEFT)
+        ttk.Button(toolbar, text="匯入配置", command=self.import_config).pack(side=tk.LEFT, padx=6)
+        ttk.Button(toolbar, text="匯出配置", command=self.export_config).pack(side=tk.LEFT, padx=6)
+        ttk.Button(toolbar, text="啟動探針", command=self.start_probe).pack(side=tk.LEFT, padx=6)
+        ttk.Button(toolbar, text="停止探針", command=self.stop_probe).pack(side=tk.LEFT, padx=6)
+        ttk.Button(toolbar, text="隱藏視窗", command=self.hide_window).pack(side=tk.LEFT, padx=6)
+        ttk.Button(toolbar, text="退出程式", command=self.exit_app).pack(side=tk.RIGHT)
 
-        log_box = ttk.LabelFrame(left, text="运行日志", padding=8)
+        log_box = ttk.LabelFrame(left, text="執行日誌", padding=8)
         log_box.pack(fill=tk.BOTH, expand=True)
 
         self.log_text = tk.Text(log_box, wrap=tk.WORD, font=("Consolas", 10))
         self.log_text.pack(fill=tk.BOTH, expand=True)
 
-        ttk.Label(right, text="运行状态", font=("Microsoft YaHei UI", 12, "bold")).pack(anchor=tk.W)
+        ttk.Label(right, text="執行狀態", font=("Microsoft YaHei UI", 12, "bold")).pack(anchor=tk.W)
 
         self.online_label = tk.Label(
             right,
@@ -688,71 +688,71 @@ class ProbeGUI:
         )
         self.online_label.pack(anchor=tk.W, pady=(8, 8))
 
-        ttk.Label(right, text="状态说明：").pack(anchor=tk.W)
+        ttk.Label(right, text="狀態說明：").pack(anchor=tk.W)
         ttk.Label(right, textvariable=self.status_var).pack(anchor=tk.W, pady=(4, 10))
 
-        ttk.Label(right, text="最近一次上报时间：").pack(anchor=tk.W)
+        ttk.Label(right, text="最近一次上報時間：").pack(anchor=tk.W)
         ttk.Label(right, textvariable=self.last_report_var).pack(anchor=tk.W, pady=(4, 10))
 
-        self.uptime_label = ttk.Label(right, text="运行时间（本地显示）：-")
+        self.uptime_label = ttk.Label(right, text="執行時間（本地顯示）：-")
         self.uptime_label.pack(anchor=tk.W, pady=3)
 
-        self.boot_label = ttk.Label(right, text="启动时间戳：-")
+        self.boot_label = ttk.Label(right, text="啟動時間戳：-")
         self.boot_label.pack(anchor=tk.W, pady=3)
 
-        self.os_label = ttk.Label(right, text="操作系统：-")
+        self.os_label = ttk.Label(right, text="作業系統：-")
         self.os_label.pack(anchor=tk.W, pady=3)
 
-        self.arch_label = ttk.Label(right, text="系统架构：-")
+        self.arch_label = ttk.Label(right, text="系統架構：-")
         self.arch_label.pack(anchor=tk.W, pady=3)
 
-        self.cpu_model_label = ttk.Label(right, text="CPU型号：-")
+        self.cpu_model_label = ttk.Label(right, text="CPU型號：-")
         self.cpu_model_label.pack(anchor=tk.W, pady=3)
 
         self.cpu_core_label = ttk.Label(right, text="CPU核心：-")
         self.cpu_core_label.pack(anchor=tk.W, pady=3)
 
-        self.load_label = ttk.Label(right, text="负载均值：-")
+        self.load_label = ttk.Label(right, text="負載均值：-")
         self.load_label.pack(anchor=tk.W, pady=3)
 
-        self.cpu_label = ttk.Label(right, text="CPU占用：-")
+        self.cpu_label = ttk.Label(right, text="CPU佔用：-")
         self.cpu_label.pack(anchor=tk.W, pady=3)
 
-        self.ram_label = ttk.Label(right, text="内存占用：-")
+        self.ram_label = ttk.Label(right, text="記憶體佔用：-")
         self.ram_label.pack(anchor=tk.W, pady=3)
 
-        self.ram_total_label = ttk.Label(right, text="总内存：-")
+        self.ram_total_label = ttk.Label(right, text="總記憶體：-")
         self.ram_total_label.pack(anchor=tk.W, pady=3)
 
-        self.swap_label = ttk.Label(right, text="交换占用：-")
+        self.swap_label = ttk.Label(right, text="交換佔用：-")
         self.swap_label.pack(anchor=tk.W, pady=3)
 
-        self.swap_total_label = ttk.Label(right, text="总交换：-")
+        self.swap_total_label = ttk.Label(right, text="總交換：-")
         self.swap_total_label.pack(anchor=tk.W, pady=3)
 
-        self.disk_label = ttk.Label(right, text="磁盘占用：-")
+        self.disk_label = ttk.Label(right, text="磁碟佔用：-")
         self.disk_label.pack(anchor=tk.W, pady=3)
 
-        self.disk_total_label = ttk.Label(right, text="总磁盘：-")
+        self.disk_total_label = ttk.Label(right, text="總磁碟：-")
         self.disk_total_label.pack(anchor=tk.W, pady=3)
 
-        self.net_label = ttk.Label(right, text="网络速度：-")
+        self.net_label = ttk.Label(right, text="網路速度：-")
         self.net_label.pack(anchor=tk.W, pady=3)
 
-        self.ip_status_label = ttk.Label(right, text="IPv4/IPv6状态：-")
+        self.ip_status_label = ttk.Label(right, text="IPv4/IPv6狀態：-")
         self.ip_status_label.pack(anchor=tk.W, pady=3)
 
-        self.public_ip_label = ttk.Label(right, text="公网IP：-")
+        self.public_ip_label = ttk.Label(right, text="公網IP：-")
         self.public_ip_label.pack(anchor=tk.W, pady=3)
 
-        self.ping_label = ttk.Label(right, text="延时：-")
+        self.ping_label = ttk.Label(right, text="延時：-")
         self.ping_label.pack(anchor=tk.W, pady=3)
 
         ttk.Separator(right).pack(fill=tk.X, pady=12)
 
         ttk.Label(
             right,
-            text="说明：已严格对齐 Linux V1.0.1 协议。boot_time 为毫秒时间戳，容量字段按 MB 上报，GUI 仅转换成 GB 显示。",
+            text="說明：已嚴格對齊 Linux V1.0.1 協議。boot_time 為毫秒時間戳，容量欄位按 MB 上報，GUI 僅轉換成 GB 顯示。",
             wraplength=360,
         ).pack(anchor=tk.W)
 
@@ -786,14 +786,14 @@ class ProbeGUI:
                 or not config["worker_url"]
             ):
                 if show_msg:
-                    messagebox.showwarning("提示", "请填写完整配置。")
+                    messagebox.showwarning("提示", "請填寫完整配置。")
                 return False
 
             if not config["worker_url"].startswith(("http://", "https://")):
                 if show_msg:
                     messagebox.showwarning(
                         "提示",
-                        "上报链接必须以 http:// 或 https:// 开头"
+                        "上報連結必須以 http:// 或 https:// 開頭"
                     )
                 return False
 
@@ -803,7 +803,7 @@ class ProbeGUI:
                 try:
                     create_startup_task()
                 except Exception as e:
-                    log(f"更新自动启动任务失败: {e}")
+                    log(f"更新自動啟動任務失敗: {e}")
 
             running = (
                 self.worker_thread
@@ -811,7 +811,7 @@ class ProbeGUI:
             )
 
             if running:
-                log("配置已变更，正在重启探针...")
+                log("配置已變更，正在重啟探針...")
 
                 stop_event.set()
 
@@ -827,7 +827,7 @@ class ProbeGUI:
 
                 self.worker_thread.start()
 
-                log("探针已重新启动。")
+                log("探針已重新啟動。")
 
             else:
                 stop_event.clear()
@@ -837,24 +837,24 @@ class ProbeGUI:
                     daemon=True,
                 )
                 self.worker_thread.start()
-                self.status_var.set("运行中")
-                log("探针已启动。")
+                self.status_var.set("執行中")
+                log("探針已啟動。")
 
-            log("配置已保存。")
+            log("配置已儲存。")
 
             if show_msg:
-                messagebox.showinfo("完成", "配置已保存。")
+                messagebox.showinfo("完成", "配置已儲存。")
 
             return True
 
         except Exception as e:
-            messagebox.showerror("错误", str(e))
+            messagebox.showerror("錯誤", str(e))
             return False
     
     def import_config(self):
         file_path = filedialog.askopenfilename(
-            title="导入配置",
-            filetypes=[("JSON 文件", "*.json"), ("所有文件", "*.*")],
+            title="匯入配置",
+            filetypes=[("JSON 檔案", "*.json"), ("所有檔案", "*.*")],
         )
         if not file_path:
             return
@@ -869,16 +869,16 @@ class ProbeGUI:
             self.silent_start_var.set(bool(cfg.get("silent_start", True)))
             self.ping_type_var.set(cfg.get("ping_type", "tcp"))
 
-            log("已导入配置。")
-            messagebox.showinfo("完成", "配置导入成功。")
+            log("已匯入配置。")
+            messagebox.showinfo("完成", "配置匯入成功。")
         except Exception as e:
-            messagebox.showerror("错误", f"导入失败: {e}")
+            messagebox.showerror("錯誤", f"匯入失敗: {e}")
 
     def export_config(self):
         file_path = filedialog.asksaveasfilename(
-            title="导出配置",
+            title="匯出配置",
             defaultextension=".json",
-            filetypes=[("JSON 文件", "*.json"), ("所有文件", "*.*")],
+            filetypes=[("JSON 檔案", "*.json"), ("所有檔案", "*.*")],
         )
         if not file_path:
             return
@@ -899,18 +899,18 @@ class ProbeGUI:
             with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(cfg, f, ensure_ascii=False, indent=2)
 
-            log("已导出配置。")
-            messagebox.showinfo("完成", "配置导出成功。")
+            log("已匯出配置。")
+            messagebox.showinfo("完成", "配置匯出成功。")
         except Exception as e:
-            messagebox.showerror("错误", f"导出失败: {e}")
+            messagebox.showerror("錯誤", f"匯出失敗: {e}")
 
     def start_probe(self):
         if self.worker_thread and self.worker_thread.is_alive():
-            log("探针已经在运行。")
+            log("探針已經在執行。")
             return
 
         if not self.save(show_msg=False):
-            messagebox.showwarning("提示", "请先填写完整配置。")
+            messagebox.showwarning("提示", "請先填寫完整配置。")
             return
 
         stop_event.clear()
@@ -920,8 +920,8 @@ class ProbeGUI:
             daemon=True,
         )
         self.worker_thread.start()
-        self.status_var.set("运行中")
-        log("已点击启动探针。")
+        self.status_var.set("執行中")
+        log("已點選啟動探針。")
 
     def stop_probe(self):
         stop_event.set()
@@ -930,10 +930,10 @@ class ProbeGUI:
             self.worker_thread.join(timeout=5)
 
         self.status_var.set("已停止")
-        self.online_var.set("离线")
+        self.online_var.set("離線")
         self.online_label.config(bg="#d9534f")
 
-        log("已点击停止探针。")
+        log("已點選停止探針。")
 
     def update_metrics(self, metrics, ok, report_time):
         self.root.after(0, lambda: self.render_metrics(metrics, ok, report_time))
@@ -942,45 +942,45 @@ class ProbeGUI:
         self.last_report_var.set(report_time)
 
         if ok:
-            self.status_var.set("运行中，上报成功")
-            self.online_var.set("在线")
+            self.status_var.set("執行中，上報成功")
+            self.online_var.set("線上")
             self.online_label.config(bg="#28a745")
         else:
-            self.status_var.set("运行中，上报失败")
-            self.online_var.set("离线")
+            self.status_var.set("執行中，上報失敗")
+            self.online_var.set("離線")
             self.online_label.config(bg="#d9534f")
 
         if not metrics:
             return
 
-        self.uptime_label.config(text=f"运行时间（本地显示）：{metrics.get('uptime_text', '-')}")
-        self.boot_label.config(text=f"启动时间戳：{metrics.get('boot_time', '-')}")
-        self.os_label.config(text=f"操作系统：{metrics.get('os', '-')}")
-        self.arch_label.config(text=f"系统架构：{metrics.get('arch', '-')}")
-        self.cpu_model_label.config(text=f"CPU型号：{metrics.get('cpu_info', '-')}")
+        self.uptime_label.config(text=f"執行時間（本地顯示）：{metrics.get('uptime_text', '-')}")
+        self.boot_label.config(text=f"啟動時間戳：{metrics.get('boot_time', '-')}")
+        self.os_label.config(text=f"作業系統：{metrics.get('os', '-')}")
+        self.arch_label.config(text=f"系統架構：{metrics.get('arch', '-')}")
+        self.cpu_model_label.config(text=f"CPU型號：{metrics.get('cpu_info', '-')}")
         self.cpu_core_label.config(text=f"CPU核心：{metrics.get('cpu_cores', '-')}")
-        self.load_label.config(text=f"负载均值：{metrics.get('load_avg', '-')}")
-        self.cpu_label.config(text=f"CPU占用：{metrics.get('cpu', '-')}%")
-        self.ram_label.config(text=f"内存占用：{metrics.get('ram', '-')}%")
-        self.ram_total_label.config(text=f"总内存：{mb_to_gb_text(metrics.get('ram_total', '0'))}")
-        self.swap_label.config(text=f"交换占用：{mb_to_gb_text(metrics.get('swap_used', '0'))}")
-        self.swap_total_label.config(text=f"总交换：{mb_to_gb_text(metrics.get('swap_total', '0'))}")
-        self.disk_label.config(text=f"磁盘占用：{metrics.get('disk', '-')}%")
-        self.disk_total_label.config(text=f"总磁盘：{mb_to_gb_text(metrics.get('disk_total', '0'))}")
+        self.load_label.config(text=f"負載均值：{metrics.get('load_avg', '-')}")
+        self.cpu_label.config(text=f"CPU佔用：{metrics.get('cpu', '-')}%")
+        self.ram_label.config(text=f"記憶體佔用：{metrics.get('ram', '-')}%")
+        self.ram_total_label.config(text=f"總記憶體：{mb_to_gb_text(metrics.get('ram_total', '0'))}")
+        self.swap_label.config(text=f"交換佔用：{mb_to_gb_text(metrics.get('swap_used', '0'))}")
+        self.swap_total_label.config(text=f"總交換：{mb_to_gb_text(metrics.get('swap_total', '0'))}")
+        self.disk_label.config(text=f"磁碟佔用：{metrics.get('disk', '-')}%")
+        self.disk_total_label.config(text=f"總磁碟：{mb_to_gb_text(metrics.get('disk_total', '0'))}")
         self.net_label.config(
-            text=f"网络速度：↓{metrics.get('net_in_speed', '0')} B/s ↑{metrics.get('net_out_speed', '0')} B/s"
+            text=f"網路速度：↓{metrics.get('net_in_speed', '0')} B/s ↑{metrics.get('net_out_speed', '0')} B/s"
         )
         self.ip_status_label.config(
-            text=f"IPv4/IPv6状态：{metrics.get('ip_v4', '0')} / {metrics.get('ip_v6', '0')}"
+            text=f"IPv4/IPv6狀態：{metrics.get('ip_v4', '0')} / {metrics.get('ip_v6', '0')}"
         )
         self.public_ip_label.config(
-            text=f"公网IP：{metrics.get('public_ipv4', '-') or '-'} / {metrics.get('public_ipv6', '-') or '-'}"
+            text=f"公網IP：{metrics.get('public_ipv4', '-') or '-'} / {metrics.get('public_ipv6', '-') or '-'}"
         )
         self.ping_label.config(
             text=(
-                f"电信 {metrics.get('ping_ct', '') or '-'}ms  "
-                f"联通 {metrics.get('ping_cu', '') or '-'}ms  "
-                f"移动 {metrics.get('ping_cm', '') or '-'}ms  "
+                f"電信 {metrics.get('ping_ct', '') or '-'}ms  "
+                f"聯通 {metrics.get('ping_cu', '') or '-'}ms  "
+                f"移動 {metrics.get('ping_cm', '') or '-'}ms  "
                 f"BGP {metrics.get('ping_bd', '') or '-'}ms"
             )
         )
@@ -994,7 +994,7 @@ class ProbeGUI:
                 delete_startup_task()
         except Exception as e:
             self.autostart_var.set(task_exists())
-            messagebox.showerror("错误", str(e))
+            messagebox.showerror("錯誤", str(e))
 
     def flush_logs(self):
         try:
@@ -1012,7 +1012,7 @@ class ProbeGUI:
 
     def hide_window(self):
         self.root.withdraw()
-        log("窗口已隐藏到系统托盘。")
+        log("視窗已隱藏到系統托盤。")
 
     def show_window(self):
         self.root.deiconify()
@@ -1020,7 +1020,7 @@ class ProbeGUI:
         self.root.focus_force()
 
     def exit_app(self):
-        if messagebox.askyesno("退出", "确定要退出程序吗？"):
+        if messagebox.askyesno("退出", "確定要退出程式嗎？"):
             stop_event.set()
             global tray_icon
             if tray_icon:
@@ -1064,7 +1064,7 @@ def create_tray_icon(app):
                     create_startup_task()
                     app.autostart_var.set(True)
             except Exception as e:
-                messagebox.showerror("错误", str(e))
+                messagebox.showerror("錯誤", str(e))
         app.root.after(0, action)
 
     def on_start(icon, item):
@@ -1082,13 +1082,13 @@ def create_tray_icon(app):
     tray_icon = pystray.Icon(
         APP_NAME,
         image,
-        "CF服务器监控探针",
+        "CF伺服器監控探針",
         menu=pystray.Menu(
-            pystray.MenuItem("显示窗口", on_show),
-            pystray.MenuItem("启动探针", on_start),
-            pystray.MenuItem("停止探针", on_stop),
-            pystray.MenuItem("跟随系统自动启动", on_toggle_autostart, checked=checked),
-            pystray.MenuItem("退出程序", on_exit),
+            pystray.MenuItem("顯示視窗", on_show),
+            pystray.MenuItem("啟動探針", on_start),
+            pystray.MenuItem("停止探針", on_stop),
+            pystray.MenuItem("跟隨系統自動啟動", on_toggle_autostart, checked=checked),
+            pystray.MenuItem("退出程式", on_exit),
         ),
     )
 
@@ -1115,16 +1115,16 @@ def uninstall_cli():
                 backup.unlink()
 
     except Exception as e:
-        print(f"清理文件失败: {e}")
+        print(f"清理檔案失敗: {e}")
 
-    print("卸载完成。")
+    print("解除安裝完成。")
 
 
 def run_gui(minimized=False):
     if not ensure_deps():
         root = tk.Tk()
         root.withdraw()
-        messagebox.showerror("错误", "依赖安装失败，请手动执行: pip install psutil pystray pillow")
+        messagebox.showerror("錯誤", "依賴安裝失敗，請手動執行: pip install psutil pystray pillow")
         return
 
     cfg = load_config()
@@ -1143,21 +1143,21 @@ def run_gui(minimized=False):
 
 def main():
     if not is_windows():
-        print("此程序仅适用于 Windows 10/11。")
+        print("此程式僅適用於 Windows 10/11。")
         sys.exit(1)
 
     cmd = sys.argv[1].lower() if len(sys.argv) >= 2 else "gui"
 
     if cmd in ("uninstall", "remove", "delete", "purge"):
         if not ensure_admin():
-            print("无法获取管理员权限。")
+            print("無法獲取管理員許可權。")
             sys.exit(1)
 
     if cmd == "gui":
         run_gui("--minimized" in sys.argv)
     elif cmd == "run":
         if not ensure_deps():
-            print("缺少依赖，请执行: pip install psutil pystray pillow")
+            print("缺少依賴，請執行: pip install psutil pystray pillow")
             sys.exit(1)
         probe_loop()
     elif cmd in ("uninstall", "remove", "delete", "purge"):

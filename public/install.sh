@@ -1,14 +1,14 @@
 #!/bin/bash
 # ==============================================================================
 # V1.2.0
-# CF-Server-Monitor 安装/卸载脚本 (企业级安全加固版)
-# 支持: Ubuntu/Debian/CentOS/RHEL/Fedora/Rocky/AlmaLinux
-# Fixes: 1. 独立协程无 wait 阻塞 2. 原子化原子覆盖 3. 兼容全版本 Systemd 4. 严格 set -u 闭环
+# CF-Server-Monitor 安裝/解除安裝指令碼 (企業級安全加固版)
+# 支援: Ubuntu/Debian/CentOS/RHEL/Fedora/Rocky/AlmaLinux
+# Fixes: 1. 獨立協程無 wait 阻塞 2. 原子化原子覆蓋 3. 相容全版本 Systemd 4. 嚴格 set -u 閉環
 # ==============================================================================
 
 set -euo pipefail
 
-# 颜色定义
+# 顏色定義
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -16,7 +16,7 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-# 路径定义
+# 路徑定義
 SERVICE_NAME="cf-probe"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 SCRIPT_FILE="/usr/local/bin/${SERVICE_NAME}.sh"
@@ -27,7 +27,7 @@ OLD_TRAFFIC_DATA_FILE="/var/lib/cf-probe/traffic.dat"
 
 print_banner() {
     echo -e "${CYAN}╔══════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║     CF-Server-Monitor 探针管理工具 (Enterprise) ║${NC}"
+    echo -e "${CYAN}║     CF-Server-Monitor 探針管理工具 (Enterprise) ║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════╝${NC}"
 }
 
@@ -37,25 +37,25 @@ error() { echo -e "${RED}[✗]${NC} $1"; exit 1; }
 step() { echo -e "${BLUE}[→]${NC} $1"; }
 
 print_usage() {
-    echo -e "${RED}错误: 运行所需的入参不完整。${NC}\n"
+    echo -e "${RED}錯誤: 執行所需的入參不完整。${NC}\n"
     echo "用法:"
-    echo "  bash $0 install -id=SERVER_ID -secret=SECRET -url=WORKER_URL [选项]"
+    echo "  bash $0 install -id=SERVER_ID -secret=SECRET -url=WORKER_URL [選項]"
     echo ""
-    echo "必需参数:"
-    echo "  -id=xxx        服务器ID"
-    echo "  -secret=xxx    密钥"
-    echo "  -url=xxx       上报地址"
+    echo "必需引數:"
+    echo "  -id=xxx        伺服器ID"
+    echo "  -secret=xxx    金鑰"
+    echo "  -url=xxx       上報地址"
     echo ""
-    echo "可选参数:"
-    echo "  -interval=N    上报间隔(秒)，默认60"
-    echo "  -ping=TYPE     探测类型: http | tcp，默认http"
-    echo "  -ct=HOST       自定义CT测试节点"
-    echo "  -cu=HOST       自定义CU测试节点"
-    echo "  -cm=HOST       自定义CM测试节点"
-    echo "  -bd=HOST       自定义BD测试节点"
-    echo "  -reset_day=N   流量重置日(1-31)，默认1"
-    echo "  -rx_correction=N  下行流量校正(GB)，修改当月下行数据"
-    echo "  -tx_correction=N  上行流量校正(GB)，修改当月上行数据"
+    echo "可選引數:"
+    echo "  -interval=N    上報間隔(秒)，預設60"
+    echo "  -ping=TYPE     探測型別: http | tcp，預設http"
+    echo "  -ct=HOST       自定義CT測試節點"
+    echo "  -cu=HOST       自定義CU測試節點"
+    echo "  -cm=HOST       自定義CM測試節點"
+    echo "  -bd=HOST       自定義BD測試節點"
+    echo "  -reset_day=N   流量重置日(1-31)，預設1"
+    echo "  -rx_correction=N  下行流量校正(GB)，修改當月下行資料"
+    echo "  -tx_correction=N  上行流量校正(GB)，修改當月上行資料"
     echo ""
     echo "示例:"
     echo "  bash $0 install -id=server123 -secret=abc123 -url=https://worker.example.com"
@@ -79,12 +79,12 @@ sed_escape() {
 
 check_root() {
     if [ "$(id -u)" != "0" ]; then
-        error "请使用 root 权限运行此脚本: sudo bash $0"
+        error "請使用 root 許可權執行此指令碼: sudo bash $0"
     fi
 }
 
 detect_os() {
-    # 彻底杜绝 set -u 下 source /etc/os-release 由于发行版自身未知变量未定义导致的崩溃
+    # 徹底杜絕 set -u 下 source /etc/os-release 由於發行版自身未知變數未定義導致的崩潰
     if [ -f /etc/os-release ]; then
         OS_ID=$(grep -E '^ID=' /etc/os-release | cut -d= -f2 | tr -d '"' | tr -d "'")
     else
@@ -95,18 +95,18 @@ detect_os() {
     case "$OS_ID" in
         ubuntu|debian|raspbian) PKG_MGR="apt-get" ;;
         centos|rhel|fedora|rocky|almalinux|ol|amzn) PKG_MGR="yum" ;;
-        alpine) error "未识别的系统类型: alpine，请在后台选择正确的系统后复制命令重试" ;;
-        *) warn "未识别的系统类型: $OS_ID，尝试默认使用 apt-get" ; PKG_MGR="apt-get" ;;
+        alpine) error "未識別的系統型別: alpine，請在後臺選擇正確的系統後複製命令重試" ;;
+        *) warn "未識別的系統型別: $OS_ID，嘗試預設使用 apt-get" ; PKG_MGR="apt-get" ;;
     esac
 }
 
 install_deps() {
-    step "检查系统依赖组件..."
+    step "檢查系統依賴元件..."
     local required_cmds=("curl" "awk" "grep" "sed" "ps" "df" "ping")
     
     for cmd in "${required_cmds[@]}"; do
         if ! command -v "$cmd" >/dev/null 2>&1; then
-            warn "缺少必要依赖: $cmd，正在尝试自动安装..."
+            warn "缺少必要依賴: $cmd，正在嘗試自動安裝..."
             local pkg="$cmd"
             if [ "$cmd" = "ping" ]; then
                 if [ "${PKG_MGR:-apt-get}" = "apt-get" ]; then
@@ -122,18 +122,18 @@ install_deps() {
             fi
         fi
         if ! command -v "$cmd" >/dev/null 2>&1; then
-            error "无法自动安装依赖 [$cmd]，请手动安装后重试。"
+            error "無法自動安裝依賴 [$cmd]，請手動安裝後重試。"
         fi
     done
     
     if ! command -v systemctl >/dev/null 2>&1; then
-        error "本脚本仅支持基于 systemd 的 Linux 发行版。"
+        error "本指令碼僅支援基於 systemd 的 Linux 發行版。"
     fi
-    info "基础依赖组件检查通过"
+    info "基礎依賴元件檢查通過"
 }
 
 stop_old_service() {
-    step "清理可能存在的旧服务进程..."
+    step "清理可能存在的舊服務程序..."
     if systemctl is-active --quiet "${SERVICE_NAME}.service" 2>/dev/null; then
         systemctl stop "${SERVICE_NAME}.service" 2>/dev/null || true
     fi
@@ -146,7 +146,7 @@ stop_old_service() {
 }
 
 create_script() {
-    step "注入工业级监控采集探针..."
+    step "注入工業級監控採集探針..."
 
     cat > "${SCRIPT_FILE}" << 'PROBE_EOF'
 #!/bin/bash
@@ -157,7 +157,7 @@ CONFIG_FILE="${CONFIG_DIR}/config.conf"
 TRAFFIC_DATA_FILE="${CONFIG_DIR}/traffic.dat"
 
 if [ ! -f "${CONFIG_FILE}" ]; then
-    echo "[ERROR] 配置文件不存在: ${CONFIG_FILE}"
+    echo "[ERROR] 配置檔案不存在: ${CONFIG_FILE}"
     exit 1
 fi
 
@@ -180,7 +180,7 @@ REPORT_INTERVAL=${REPORT_INTERVAL:-60}
 PING_TYPE=${PING_TYPE:-http}
 RESET_DAY=${RESET_DAY:-1}
 
-# 严苛环境下的规范 JSON 字段转义函数
+# 嚴苛環境下的規範 JSON 欄位轉義函式
 escape_json() {
     local val="${1:-}"
     val="${val//\\/\\\\}"
@@ -206,7 +206,7 @@ is_leap_year() {
     [ $((year % 4)) -eq 0 ] && [ $((year % 100)) -ne 0 ] || [ $((year % 400)) -eq 0 ]
 }
 
-# 获取当月账单周期起始时间戳（UTC+0）
+# 獲取當月賬單週期起始時間戳（UTC+0）
 get_period_start_ts() {
     local reset_day="$1"
     local now_ts="$2"
@@ -249,7 +249,7 @@ get_period_start_ts() {
     echo "$period_start_ts"
 }
 
-# 计算月度流量（自动持久化）
+# 計算月度流量（自動持久化）
 calc_monthly_traffic() {
     local current_rx="$1"
     local current_tx="$2"
@@ -259,7 +259,7 @@ calc_monthly_traffic() {
     
     mkdir -p "${CONFIG_DIR}" 2>/dev/null || true
     
-    # 读取上次保存的数据（使用临时变量避免与全局变量冲突）
+    # 讀取上次儲存的資料（使用臨時變數避免與全域性變數衝突）
     local saved_rx_prev=0 saved_tx_prev=0 saved_rx_period=0 saved_tx_period=0 saved_last_check=0 saved_period_start=0
     if [ -f "${TRAFFIC_DATA_FILE}" ]; then
         local tmp_rx_prev tmp_tx_prev tmp_rx_period tmp_tx_period tmp_last_check tmp_period_start
@@ -278,14 +278,14 @@ calc_monthly_traffic() {
         saved_last_check=${tmp_last_check:-0}; saved_period_start=${tmp_period_start:-0}
     fi
     
-    # 计算当前账单周期起始
+    # 計算當前賬單週期起始
     local period_start_ts
     period_start_ts=$(get_period_start_ts "$reset_day" "$now_ts")
     
-    # 检测是否是首次运行（没有历史记录）
+    # 檢測是否是首次執行（沒有歷史記錄）
     local rx_delta=0 tx_delta=0
     if [ "$saved_last_check" -ne 0 ]; then
-        # 非首次运行，计算增量
+        # 非首次執行，計算增量
         if [ "$current_rx" -lt "$saved_rx_prev" ] || [ "$current_tx" -lt "$saved_tx_prev" ]; then
             rx_delta=0; tx_delta=0
         else
@@ -293,7 +293,7 @@ calc_monthly_traffic() {
             tx_delta=$((current_tx - saved_tx_prev))
         fi
         
-        # 判断是否进入新账单周期（跨月）
+        # 判斷是否進入新賬單週期（跨月）
         if [ "$period_start_ts" -ne "$saved_period_start" ] && [ "$saved_period_start" -ne 0 ]; then
             saved_rx_period="$rx_delta"; saved_tx_period="$tx_delta"
         else
@@ -301,12 +301,12 @@ calc_monthly_traffic() {
             saved_tx_period=$((saved_tx_period + tx_delta))
         fi
     else
-        # 首次运行，周期流量从0开始
+        # 首次執行，週期流量從0開始
         saved_rx_period=0
         saved_tx_period=0
     fi
     
-    # 持久化保存
+    # 持久化儲存
     cat > "${TRAFFIC_DATA_FILE}.tmp" << EOF
 RX_PREV=${current_rx}
 TX_PREV=${current_tx}
@@ -317,7 +317,7 @@ PERIOD_START=${period_start_ts}
 EOF
     mv "${TRAFFIC_DATA_FILE}.tmp" "${TRAFFIC_DATA_FILE}" 2>/dev/null || true
     
-    # 返回当月流量（上行=tx, 下行=rx）
+    # 返回當月流量（上行=tx, 下行=rx）
     echo "$saved_rx_period $saved_tx_period"
 }
 
@@ -444,17 +444,17 @@ get_packet_loss() {
     }'
 }
 
-# 测试节点定义（支持参数覆盖，空值则跳过）
+# 測試節點定義（支援引數覆蓋，空值則跳過）
 CT_NODE="${CT_NODE:-}"
 CU_NODE="${CU_NODE:-}"
 CM_NODE="${CM_NODE:-}"
 BD_NODE="${BD_NODE:-}"
 
 # ==============================================================================
-# 高并发/无竞态后台网络 Worker 协程
+# 高併發/無競態後臺網路 Worker 協程
 # ==============================================================================
 run_network_worker() {
-    # 继承外层 set -eu 行为
+    # 繼承外層 set -eu 行為
     set -eu
     local last_ip=0
     local last_ping=0
@@ -462,14 +462,14 @@ run_network_worker() {
     while true; do
         local now; now=$(date +%s)
         
-        # 10分钟检测一次 IP
+        # 10分鐘檢測一次 IP
         if [ $((now - last_ip)) -ge 600 ] || [ "$last_ip" -eq 0 ]; then
             (curl -s -m 2 --connect-timeout 2 https://cloudflare.com/cdn-cgi/trace 2>/dev/null | grep -q "ip=" && echo "1" || echo "0") > /dev/shm/.cf_ipv4.tmp && mv /dev/shm/.cf_ipv4.tmp /dev/shm/.cf_ipv4 || true
             (if ip -6 route show default >/dev/null 2>&1; then curl -6 -s -m 2 --connect-timeout 2 https://cloudflare.com/cdn-cgi/trace 2>/dev/null | grep -q "ip=" && echo "1" || echo "0"; else echo "0"; fi) > /dev/shm/.cf_ipv6.tmp && mv /dev/shm/.cf_ipv6.tmp /dev/shm/.cf_ipv6 || true
             last_ip="$now"
         fi
         
-        # 30秒检测一次网络延迟
+        # 30秒檢測一次網路延遲
         if [ $((now - last_ping)) -ge 30 ] || [ "$last_ping" -eq 0 ]; then
             [ -n "$CT_NODE" ] && get_ping "$CT_NODE" > /dev/shm/.cf_ping_ct.tmp && mv /dev/shm/.cf_ping_ct.tmp /dev/shm/.cf_ping_ct || rm -f /dev/shm/.cf_ping_ct
             [ -n "$CU_NODE" ] && get_ping "$CU_NODE" > /dev/shm/.cf_ping_cu.tmp && mv /dev/shm/.cf_ping_cu.tmp /dev/shm/.cf_ping_cu || rm -f /dev/shm/.cf_ping_cu
@@ -485,7 +485,7 @@ run_network_worker() {
     done
 }
 
-# 首次基础数据初始化
+# 首次基礎資料初始化
 NET_STAT=$(get_net_bytes)
 RX_PREV=$(echo "$NET_STAT" | awk '{print $1}'); RX_PREV=${RX_PREV:-0}
 TX_PREV=$(echo "$NET_STAT" | awk '{print $2}'); TX_PREV=${TX_PREV:-0}
@@ -498,20 +498,20 @@ PREV_LOOP_TIME=$(date +%s)
 
 echo "[INFO] CF-Server-Monitor Probe Engine Started Successfully."
 
-# 核心架构升级：在这里脱离主循环，静默启动常驻网络 Worker 协程，无 wait 干扰
+# 核心架構升級：在這裡脫離主迴圈，靜默啟動常駐網路 Worker 協程，無 wait 干擾
 run_network_worker &
 WORKER_PID=$!
 
 while true; do
     LOOP_START_TIME=$(date +%s)
     
-    # Worker 进程健康检查与自动重启
+    # Worker 程序健康檢查與自動重啟
     if ! kill -0 "$WORKER_PID" 2>/dev/null; then
         run_network_worker &
         WORKER_PID=$!
     fi
     
-    # ------------------ 同步系统指标采集模块 (全面 set -u 安全适配) ------------------
+    # ------------------ 同步系統指標採集模組 (全面 set -u 安全適配) ------------------
     MEM_TOTAL_KB=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo 2>/dev/null || echo 0); MEM_TOTAL_KB=${MEM_TOTAL_KB:-0}
     MEM_AVAIL_KB=$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo 2>/dev/null || echo 0); MEM_AVAIL_KB=${MEM_AVAIL_KB:-0}
     if [ "${MEM_AVAIL_KB}" -eq 0 ]; then
@@ -530,7 +530,7 @@ while true; do
     SWAP_USED=$(((SWAP_TOTAL_KB - SWAP_FREE_KB) / 1024))
     [ "${SWAP_USED}" -lt 0 ] && SWAP_USED=0
 
-    # 统计所有数据分区的总容量和使用量（排除引导、光驱、Snap等）
+    # 統計所有資料分割槽的總容量和使用量（排除引導、光碟機、Snap等）
     DISK_TOTAL=0; DISK_USED=0
     DISK_STATS=$(df -kP 2>/dev/null | awk '
         NR>1 && 
@@ -547,7 +547,7 @@ while true; do
         DISK_USED=$(echo "${DISK_STATS}" | awk '{print int($2/1024)}')
     fi
 
-    # CPU 核心利用率计算
+    # CPU 核心利用率計算
     CPU_STAT=$(get_cpu_stat)
     CPU_TOTAL_NOW=$(echo "$CPU_STAT" | awk '{print $1}'); CPU_TOTAL_NOW=${CPU_TOTAL_NOW:-0}
     CPU_IDLE_NOW=$(echo "$CPU_STAT" | awk '{print $2}'); CPU_IDLE_NOW=${CPU_IDLE_NOW:-0}
@@ -562,7 +562,7 @@ while true; do
     PREV_CPU_TOTAL=${CPU_TOTAL_NOW}
     PREV_CPU_IDLE=${CPU_IDLE_NOW}
 
-    # 基础静态/准静态元数据安全解析
+    # 基礎靜態/準靜態後設資料安全解析
     if [ -f /etc/os-release ]; then
         OS_RAW=$(grep -E '^PRETTY_NAME=' /etc/os-release | cut -d= -f2 | tr -d '"' | tr -d "'")
     else
@@ -597,7 +597,7 @@ while true; do
     TCP_CONN=""
 
     if command -v ss >/dev/null 2>&1; then
-        # 只统计真正“活跃连接”
+        # 只統計真正“活躍連線”
         TCP_CONN=$(ss -H -ant state established 2>/dev/null | wc -l)
     else
         # /proc fallback：只算 ESTABLISHED (st=01)
@@ -618,12 +618,12 @@ while true; do
 
     UDP_CONN=$(printf "%s" "${UDP_CONN:-0}" | tr -d '\r\n ')
 
-    # ------------------ 精确无干扰时钟网速算法 ------------------
+    # ------------------ 精確無干擾時鐘網速演算法 ------------------
     NET_STAT=$(get_net_bytes)
     RX_NOW=$(echo "$NET_STAT" | awk '{print $1}'); RX_NOW=${RX_NOW:-0}
     TX_NOW=$(echo "$NET_STAT" | awk '{print $2}'); TX_NOW=${TX_NOW:-0}
     
-    # 计算当月累计流量
+    # 計算當月累計流量
     MONTHLY_TRAFFIC=$(calc_monthly_traffic "$RX_NOW" "$TX_NOW")
     RX_MONTHLY=$(echo "$MONTHLY_TRAFFIC" | awk '{print $1}')
     TX_MONTHLY=$(echo "$MONTHLY_TRAFFIC" | awk '{print $2}')
@@ -643,7 +643,7 @@ while true; do
     TX_PREV=${TX_NOW}
     PREV_LOOP_TIME=${LOOP_START_TIME}
 
-    # ------------------ 读取共享内存 (Rename 机制下绝对无竞态) ------------------
+    # ------------------ 讀取共享記憶體 (Rename 機制下絕對無競態) ------------------
     [ -f /dev/shm/.cf_ipv4 ] && IPV4=$(cat /dev/shm/.cf_ipv4) || IPV4="0"
     [ -f /dev/shm/.cf_ipv6 ] && IPV6=$(cat /dev/shm/.cf_ipv6) || IPV6="0"
     [ -f /dev/shm/.cf_ping_ct ] && PING_CT=$(cat /dev/shm/.cf_ping_ct) || PING_CT=""
@@ -655,7 +655,7 @@ while true; do
     [ -f /dev/shm/.cf_loss_cm ] && LOSS_CM=$(cat /dev/shm/.cf_loss_cm) || LOSS_CM=""
     [ -f /dev/shm/.cf_loss_bd ] && LOSS_BD=$(cat /dev/shm/.cf_loss_bd) || LOSS_BD=""
 
-    # 安全地构建闭合规范的 JSON 数据流
+    # 安全地構建閉合規範的 JSON 資料流
     EOS=$(escape_json "${OS}")
     EARCH=$(escape_json "${ARCH}")
     ECPU=$(escape_json "${CPU_INFO}")
@@ -664,10 +664,10 @@ while true; do
 {"id":"$SERVER_ID","secret":"$SECRET","metrics":{"cpu":"$CPU","ram_total":"$RAM_TOTAL","ram_used":"$RAM_USED","swap_total":"$SWAP_TOTAL","swap_used":"$SWAP_USED","disk_total":"$DISK_TOTAL","disk_used":"$DISK_USED","load_avg":"$LOAD_AVG","boot_time":"$BOOT_TIME","net_rx":"$RX_NOW","net_tx":"$TX_NOW","net_rx_monthly":"$RX_MONTHLY","net_tx_monthly":"$TX_MONTHLY","net_in_speed":"$RX_SPEED","net_out_speed":"$TX_SPEED","os":"$EOS","arch":"$EARCH","cpu_info":"$ECPU","cpu_cores":"$CPU_CORES","gpu":$GPU,"gpu_info":$GPU_INFO_VALUE,"processes":"$PROCESSES","tcp_conn":"$TCP_CONN","udp_conn":"$UDP_CONN","ip_v4":"$IPV4","ip_v6":"$IPV6","ping_ct":"$PING_CT","ping_cu":"$PING_CU","ping_cm":"$PING_CM","ping_bd":"$PING_BD","loss_ct":"$LOSS_CT","loss_cu":"$LOSS_CU","loss_cm":"$LOSS_CM","loss_bd":"$LOSS_BD"}}
 EOF
 )
-    # 上报上游数据端 (限定 4s 超时控制，主循环绝不严重漂移)
+    # 上報上游資料端 (限定 4s 超時控制，主迴圈絕不嚴重漂移)
     curl -s -o /dev/null -X POST -H "Content-Type: application/json" -d "$PAYLOAD" -m 4 --connect-timeout 2 "$WORKER_URL" 2>/dev/null || true
     
-    # 动态补偿机制：减去指标采集耗时，保证平稳的上报频率
+    # 動態補償機制：減去指標採集耗時，保證平穩的上報頻率
     LOOP_END_TIME=$(date +%s)
     EXEC_DURATION=$((LOOP_END_TIME - LOOP_START_TIME))
     SLEEP_TIME=$((REPORT_INTERVAL - EXEC_DURATION))
@@ -677,11 +677,11 @@ done
 PROBE_EOF
 
     chmod +x "${SCRIPT_FILE}"
-    info "探针脚本注入完成: ${SCRIPT_FILE}"
+    info "探針指令碼注入完成: ${SCRIPT_FILE}"
 }
 
 create_service() {
-    step "构建高兼容、全版本通用的 Systemd 守护配置..."
+    step "構建高相容、全版本通用的 Systemd 守護配置..."
     
     cat > "${SERVICE_FILE}" << EOF
 [Unit]
@@ -697,7 +697,7 @@ RestartSec=5
 User=root
 Group=root
 
-# 生产级通用平滑优先级约束：永远不挤占前台核心业务
+# 生產級通用平滑優先順序約束：永遠不擠佔前臺核心業務
 Nice=19
 CPUSchedulingPolicy=other
 IOSchedulingClass=idle
@@ -710,20 +710,20 @@ SyslogIdentifier=cf-probe
 WantedBy=multi-user.target
 EOF
 
-    info "Systemd 守护配置文件生成成功: ${SERVICE_FILE}"
+    info "Systemd 守護配置檔案生成成功: ${SERVICE_FILE}"
 }
 
 start_service() {
-    step "加载进程树并激活监控探针..."
+    step "載入程序樹並激活監控探針..."
     systemctl daemon-reload
     systemctl enable ${SERVICE_NAME}.service >/dev/null 2>&1 || true
     systemctl restart ${SERVICE_NAME}.service
     
     sleep 1.5
     if systemctl is-active --quiet ${SERVICE_NAME}.service; then
-        info "探针监控引擎已进入平稳运行状态。"
+        info "探針監控引擎已進入平穩執行狀態。"
     else
-        error "探针服务未能启动成功。请执行命令排查原因: journalctl -u ${SERVICE_NAME} -n 20"
+        error "探針服務未能啟動成功。請執行命令排查原因: journalctl -u ${SERVICE_NAME} -n 20"
     fi
 }
 
@@ -765,14 +765,14 @@ install_probe() {
     stop_old_service
 
     if [ -f "${CONFIG_FILE}" ]; then
-        step "检测到已有配置文件，执行二次安装..."
+        step "檢測到已有配置檔案，執行二次安裝..."
         
         if [ -n "${SERVER_ID}" ] && [ -n "${SECRET}" ] && [ -n "${WORKER_URL}" ]; then
             REPORT_INTERVAL=${REPORT_INTERVAL:-60}
             PING_TYPE=${PING_TYPE:-http}
             RESET_DAY=${RESET_DAY:-1}
             
-            step "更新配置文件..."
+            step "更新配置檔案..."
             cat > "${CONFIG_FILE}" << EOF
 SERVER_ID="${SERVER_ID}"
 SECRET="${SECRET}"
@@ -785,9 +785,9 @@ CM_NODE="${CM_NODE:-}"
 BD_NODE="${BD_NODE:-}"
 RESET_DAY="${RESET_DAY}"
 EOF
-            info "配置文件已更新: ${CONFIG_FILE}"
+            info "配置檔案已更新: ${CONFIG_FILE}"
         else
-            step "从配置文件读取参数..."
+            step "從配置檔案讀取引數..."
             while IFS='=' read -r key value; do
                 case "$key" in
                     SERVER_ID) SERVER_ID="${value%\"}"; SERVER_ID="${SERVER_ID#\"}" ;;
@@ -806,7 +806,7 @@ EOF
     else
         if [ -z "${SERVER_ID}" ] || [ -z "${SECRET}" ] || [ -z "${WORKER_URL}" ]; then
             if [ -f "${SERVICE_FILE}" ]; then
-                step "尝试从旧版本服务文件提取参数..."
+                step "嘗試從舊版本服務檔案提取引數..."
                 local exec_line
                 exec_line=$(grep "^ExecStart=" "${SERVICE_FILE}" 2>/dev/null | head -1 || echo "")
                 
@@ -823,7 +823,7 @@ EOF
                     RESET_DAY=$(echo "$exec_line" | awk -F'"' '{print $22}' 2>/dev/null || echo "")
                     
                     if [ -n "${SERVER_ID}" ] && [ -n "${SECRET}" ] && [ -n "${WORKER_URL}" ]; then
-                        info "已从旧版本服务文件提取参数"
+                        info "已從舊版本服務檔案提取引數"
                     else
                         print_usage
                     fi
@@ -839,20 +839,20 @@ EOF
         PING_TYPE=${PING_TYPE:-http}
         RESET_DAY=${RESET_DAY:-1}
 
-        step "创建配置目录..."
+        step "建立配置目錄..."
         mkdir -p "${CONFIG_DIR}" 2>/dev/null || true
 
         if [ -f "${OLD_TRAFFIC_DATA_FILE}" ]; then
-            step "迁移旧流量数据..."
+            step "遷移舊流量資料..."
             mv "${OLD_TRAFFIC_DATA_FILE}" "${TRAFFIC_DATA_FILE}" 2>/dev/null || true
             rm -rf /var/lib/cf-probe 2>/dev/null || true
-            info "已从旧路径迁移流量数据"
+            info "已從舊路徑遷移流量資料"
         elif [ ! -f "${TRAFFIC_DATA_FILE}" ]; then
             touch "${TRAFFIC_DATA_FILE}" 2>/dev/null || true
-            info "创建新流量数据文件"
+            info "建立新流量資料檔案"
         fi
 
-        step "生成配置文件..."
+        step "生成配置檔案..."
         cat > "${CONFIG_FILE}" << EOF
 SERVER_ID="${SERVER_ID}"
 SECRET="${SECRET}"
@@ -865,11 +865,11 @@ CM_NODE="${CM_NODE:-}"
 BD_NODE="${BD_NODE:-}"
 RESET_DAY="${RESET_DAY}"
 EOF
-        info "配置文件已生成: ${CONFIG_FILE}"
+        info "配置檔案已生成: ${CONFIG_FILE}"
     fi
 
     if [ -n "${RX_CORRECTION}" ] || [ -n "${TX_CORRECTION}" ]; then
-        step "应用流量校正..."
+        step "應用流量校正..."
         rm -f "${OLD_TRAFFIC_DATA_FILE}" 2>/dev/null || true
         
         mkdir -p "${CONFIG_DIR}" 2>/dev/null || true
@@ -897,35 +897,35 @@ EOF
     start_service
 
     echo -e "\n${GREEN}============================================="
-    echo -e "         CF-Server-Monitor 安装成功"
+    echo -e "         CF-Server-Monitor 安裝成功"
     echo -e "=============================================${NC}"
-    echo -e "  服务状态 : ${GREEN}Active (Running)${NC}"
-    echo -e "  配置参数 :"
+    echo -e "  服務狀態 : ${GREEN}Active (Running)${NC}"
+    echo -e "  配置引數 :"
     echo -e "    ● Server ID   : ${SERVER_ID}"
     echo -e "    ● Secret      : ${SECRET}"
     echo -e "    ● Worker URL  : ${WORKER_URL}"
-    echo -e "    ● 上报间隔    : ${REPORT_INTERVAL}秒"
-    echo -e "    ● 探测类型    : ${PING_TYPE}"
+    echo -e "    ● 上報間隔    : ${REPORT_INTERVAL}秒"
+    echo -e "    ● 探測型別    : ${PING_TYPE}"
     [ -n "${RX_CORRECTION}" ] && echo -e "    ● 下行校正    : ${RX_CORRECTION}GB"
     [ -n "${TX_CORRECTION}" ] && echo -e "    ● 上行校正    : ${TX_CORRECTION}GB"
-    echo -e "    ● 流量重置日  : ${RESET_DAY}号"
-    [ -n "${CT_NODE}" ] && echo -e "    ● CT节点      : ${CT_NODE}"
-    [ -n "${CU_NODE}" ] && echo -e "    ● CU节点      : ${CU_NODE}"
-    [ -n "${CM_NODE}" ] && echo -e "    ● CM节点      : ${CM_NODE}"
-    [ -n "${BD_NODE}" ] && echo -e "    ● BD节点      : ${BD_NODE}"
+    echo -e "    ● 流量重置日  : ${RESET_DAY}號"
+    [ -n "${CT_NODE}" ] && echo -e "    ● CT節點      : ${CT_NODE}"
+    [ -n "${CU_NODE}" ] && echo -e "    ● CU節點      : ${CU_NODE}"
+    [ -n "${CM_NODE}" ] && echo -e "    ● CM節點      : ${CM_NODE}"
+    [ -n "${BD_NODE}" ] && echo -e "    ● BD節點      : ${BD_NODE}"
     echo -e "  管理指令 :"
-    echo -e "    ● 查看实时日志 : journalctl -u ${SERVICE_NAME} -f"
-    echo -e "    ● 查看运行状态 : systemctl status ${SERVICE_NAME}"
-    echo -e "    ● 停止探针服务 : systemctl stop ${SERVICE_NAME}"
+    echo -e "    ● 檢視即時日誌 : journalctl -u ${SERVICE_NAME} -f"
+    echo -e "    ● 檢視執行狀態 : systemctl status ${SERVICE_NAME}"
+    echo -e "    ● 停止探針服務 : systemctl stop ${SERVICE_NAME}"
     echo -e "=============================================\n"
 }
 
 uninstall_probe() {
     print_banner
-    echo -e "${YELLOW}[!] 开始执行无残留深度卸载清理方案...${NC}\n"
+    echo -e "${YELLOW}[!] 開始執行無殘留深度解除安裝清理方案...${NC}\n"
     check_root
 
-    step "停用并撤销系统守护进程..."
+    step "停用並撤銷系統守護程序..."
     if systemctl is-active --quiet "${SERVICE_NAME}.service" 2>/dev/null; then
         systemctl stop "${SERVICE_NAME}.service" 2>/dev/null || true
     fi
@@ -933,28 +933,28 @@ uninstall_probe() {
         systemctl disable "${SERVICE_NAME}.service" 2>/dev/null || true
     fi
 
-    step "清理服务描述性系统文件..."
+    step "清理服務描述性系統檔案..."
     rm -f "${SERVICE_FILE}"
     systemctl daemon-reload 2>/dev/null || true
     systemctl reset-failed "${SERVICE_NAME}" 2>/dev/null || true
 
-    step "销毁探针物理可执行代码文件..."
+    step "銷燬探針物理可執行程式碼檔案..."
     rm -f "${SCRIPT_FILE}"
 
-    step "抹除共享内存高速缓存区..."
+    step "抹除共享記憶體快取記憶體區..."
     rm -f /dev/shm/.cf_ipv4 /dev/shm/.cf_ipv6 /dev/shm/.cf_ping_* /dev/shm/.cf_loss_*
 
-    step "抹除流量追踪数据..."
+    step "抹除流量追蹤資料..."
     rm -rf /var/lib/${SERVICE_NAME}
     rm -rf "${CONFIG_DIR}"
 
-    step "根除孤儿或僵尸状态的探测残留进程..."
+    step "根除孤兒或殭屍狀態的探測殘留程序..."
     if pgrep -f "${SERVICE_NAME}.sh" >/dev/null 2>&1; then
         pkill -9 -f "${SERVICE_NAME}.sh" 2>/dev/null || true
     fi
 
     echo -e "\n${GREEN}╔══════════════════════════════════════════╗"
-    echo -e "║     ✓ 卸载完毕！系统环境无任何残留。     ║"
+    echo -e "║     ✓ 解除安裝完畢！系統環境無任何殘留。     ║"
     echo -e "╚══════════════════════════════════════════╝${NC}\n"
 }
 
@@ -967,7 +967,7 @@ case "${1:-install}" in
         uninstall_probe
         ;;
     *)
-        echo "未知指令. 可选命令: install | uninstall"
+        echo "未知指令. 可選命令: install | uninstall"
         exit 1
         ;;
 esac

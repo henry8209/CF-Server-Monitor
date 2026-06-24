@@ -1,11 +1,11 @@
 /**
- * 缓存管理模块
- * 集中管理所有内存缓存，包括：
- * - 服务器列表缓存
- * - 服务器详情缓存（统一替代 SELECT 1/id/*）
- * - 最新指标缓存
- * - 历史指标缓存
- * - 站点设置缓存
+ * 快取管理模組
+ * 集中管理所有記憶體快取，包括：
+ * - 伺服器列表快取
+ * - 伺服器詳情快取（統一替代 SELECT 1/id/*）
+ * - 最新指標快取
+ * - 歷史指標快取
+ * - 站點設定快取
  */
 
 import { clearSiteSettingsCache } from './settings.js';
@@ -51,7 +51,7 @@ export async function getAllServers(db, includeHidden = true) {
     serversListCache = { data: results, time: now, cacheKey };
     return results;
   } catch (e) {
-    console.error('获取服务器列表失败:', e);
+    console.error('獲取伺服器列表失敗:', e);
     return serversListCache && serversListCache.cacheKey === cacheKey ? serversListCache.data : [];
   }
 }
@@ -61,11 +61,11 @@ export function clearServersListCache() {
 }
 
 /**
- * 获取单个服务器详情（带缓存）
- * @param {object} db - 数据库实例
- * @param {string} id - 服务器 ID
- * @param {boolean} [includeHidden=false] - 是否包含隐藏服务器
- * @returns {object|null} 服务器对象，不存在返回 null
+ * 獲取單個伺服器詳情（帶快取）
+ * @param {object} db - 資料庫例項
+ * @param {string} id - 伺服器 ID
+ * @param {boolean} [includeHidden=false] - 是否包含隱藏伺服器
+ * @returns {object|null} 伺服器物件，不存在返回 null
  */
 export async function getServerDetail(db, id, includeHidden = false) {
   const now = Date.now();
@@ -94,10 +94,10 @@ export async function getServerDetail(db, id, includeHidden = false) {
 }
 
 /**
- * 检查服务器是否存在（复用服务器详情缓存）
- * @param {object} db - 数据库实例
- * @param {string} id - 服务器 ID
- * @returns {boolean} 服务器是否存在
+ * 檢查伺服器是否存在（複用伺服器詳情快取）
+ * @param {object} db - 資料庫例項
+ * @param {string} id - 伺服器 ID
+ * @returns {boolean} 伺服器是否存在
  */
 export async function checkServerExists(db, id) {
   const server = await getServerDetail(db, id, true);
@@ -105,16 +105,16 @@ export async function checkServerExists(db, id) {
 }
 
 /**
- * 清除单个服务器的详情缓存
- * @param {string} id - 服务器 ID
+ * 清除單個伺服器的詳情快取
+ * @param {string} id - 伺服器 ID
  */
 export function clearServerDetailCache(id) {
   serverDetailCache.delete(id);
 }
 
 /**
- * 获取最新指标缓存信息
- * @returns {object} 包含 cache、time、ttl 字段的对象
+ * 獲取最新指標快取資訊
+ * @returns {object} 包含 cache、time、ttl 欄位的物件
  */
 export function getLatestMetricsCache() {
   return { cache: latestAllCache, time: latestAllCacheTime, ttl: LATEST_ALL_TTL };

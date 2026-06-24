@@ -8,10 +8,10 @@ async function loadFrontendFiles(env) {
   try {
     const files = {};
     
-    // 尝试从 Cloudflare Pages/Asset 绑定读取
+    // 嘗試從 Cloudflare Pages/Asset 繫結讀取
     if (env.ASSETS) {
       try {
-        // 主要文件
+        // 主要檔案
         const mainFiles = ['dashboard.html', 'style.css'];
         for (const filename of mainFiles) {
           try {
@@ -20,7 +20,7 @@ async function loadFrontendFiles(env) {
               files[filename] = await res.text();
             }
           } catch (e) {
-            // 忽略错误
+            // 忽略錯誤
           }
         }
       } catch (e) {
@@ -47,21 +47,21 @@ function escapeCssString(str) {
 function injectAppearanceSettings(html, settings) {
   let modifiedHtml = html;
 
-  // 1. 更新页面标题
+  // 1. 更新頁面標題
   const siteTitle = escapeHtml(settings.site_title || 'Server Monitor');
   modifiedHtml = modifiedHtml.replace(/<title>.*<\/title>/, `<title>${siteTitle}</title>`);
 
-  // 2. 注入 custom_head (在 </head> 标签前)
+  // 2. 注入 custom_head (在 </head> 標籤前)
   if (settings.custom_head) {
     modifiedHtml = modifiedHtml.replace('</head>', `${settings.custom_head}\n</head>`);
   }
 
-  // 3. 注入 custom_script (在 </body> 标签前)
+  // 3. 注入 custom_script (在 </body> 標籤前)
   if (settings.custom_script) {
     modifiedHtml = modifiedHtml.replace('</body>', `<script>${settings.custom_script}</script>\n</body>`);
   }
 
-  // 4. 注入 custom_bg (添加背景样式到 body)
+  // 4. 注入 custom_bg (新增背景樣式到 body)
   if (settings.custom_bg) {
     const safeBg = escapeCssString(settings.custom_bg);
     const bgStyle = `\n<style>\n  body { background-image: url('${safeBg}'); background-size: cover; background-attachment: fixed; background-position: center; }\n</style>\n`;

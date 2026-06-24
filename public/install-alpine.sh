@@ -1,22 +1,22 @@
 #!/bin/sh
 # ==============================================================================
 # V1.2.0
-# CF-Server-Monitor 安装/卸载脚本 (Alpine Linux 兼容版)
-# 支持: Alpine Linux (OpenRC / 裸机 / Docker 容器)
-# Fixes: 1. 独立协程无 wait 阻塞 2. 原子化原子覆盖 3. 兼容 OpenRC/无 init 场景
-#        4. 严格 set -u 闭环 5. 自动安装 bash 保证探针脚本语法兼容
-#        6. 配置文件化管理 7. Worker 健康检查自动重启
+# CF-Server-Monitor 安裝/解除安裝指令碼 (Alpine Linux 相容版)
+# 支援: Alpine Linux (OpenRC / 裸機 / Docker 容器)
+# Fixes: 1. 獨立協程無 wait 阻塞 2. 原子化原子覆蓋 3. 相容 OpenRC/無 init 場景
+#        4. 嚴格 set -u 閉環 5. 自動安裝 bash 保證探針指令碼語法相容
+#        6. 配置檔案化管理 7. Worker 健康檢查自動重啟
 # ==============================================================================
 
 set -eu
 
-# 路径定义（配置文件系统）
+# 路徑定義（配置檔案系統）
 CONFIG_DIR="/etc/config/cf-probe"
 CONFIG_FILE="${CONFIG_DIR}/config.conf"
 TRAFFIC_DATA_FILE="${CONFIG_DIR}/traffic.dat"
 OLD_TRAFFIC_DATA_FILE="/var/lib/cf-probe/traffic.dat"
 
-# 颜色定义（busybox sh 下仅 printf '%b' 可用，所以统一用 printf）
+# 顏色定義（busybox sh 下僅 printf '%b' 可用，所以統一用 printf）
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -24,7 +24,7 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-# 路径定义
+# 路徑定義
 SERVICE_NAME="cf-probe"
 OPENRC_FILE="/etc/init.d/${SERVICE_NAME}"
 SCRIPT_FILE="/usr/local/bin/${SERVICE_NAME}.sh"
@@ -32,11 +32,11 @@ PID_FILE="/var/run/${SERVICE_NAME}.pid"
 LOG_FILE="/var/log/${SERVICE_NAME}.log"
 
 # ---------------------------------------------------------------
-# 统一输出工具
+# 統一輸出工具
 # ---------------------------------------------------------------
 print_banner() {
     printf '%b╔══════════════════════════════════════════════════╗%b\n' "${CYAN}" "${NC}"
-    printf '%b║     CF-Server-Monitor 探针管理工具 (Alpine)      ║%b\n' "${CYAN}" "${NC}"
+    printf '%b║     CF-Server-Monitor 探針管理工具 (Alpine)      ║%b\n' "${CYAN}" "${NC}"
     printf '%b╚══════════════════════════════════════════════════╝%b\n' "${CYAN}" "${NC}"
 }
 
@@ -46,25 +46,25 @@ error() { printf '%b[✗]%b %s\n' "${RED}"   "${NC}" "$1"; exit 1; }
 step()  { printf '%b[→]%b %s\n' "${BLUE}"  "${NC}" "$1"; }
 
 print_usage() {
-    printf '%b错误: 运行所需的入参不完整。%b\n\n' "${RED}" "${NC}"
+    printf '%b錯誤: 執行所需的入參不完整。%b\n\n' "${RED}" "${NC}"
     echo "用法:"
-    echo "  sh $0 install -id=SERVER_ID -secret=SECRET -url=WORKER_URL [选项]"
+    echo "  sh $0 install -id=SERVER_ID -secret=SECRET -url=WORKER_URL [選項]"
     echo ""
-    echo "必需参数:"
-    echo "  -id=xxx        服务器ID"
-    echo "  -secret=xxx    密钥"
-    echo "  -url=xxx       上报地址"
+    echo "必需引數:"
+    echo "  -id=xxx        伺服器ID"
+    echo "  -secret=xxx    金鑰"
+    echo "  -url=xxx       上報地址"
     echo ""
-    echo "可选参数:"
-    echo "  -interval=N    上报间隔(秒)，默认60"
-    echo "  -ping=TYPE     探测类型: http | tcp，默认http"
-    echo "  -ct=HOST       自定义CT测试节点"
-    echo "  -cu=HOST       自定义CU测试节点"
-    echo "  -cm=HOST       自定义CM测试节点"
-    echo "  -bd=HOST       自定义BD测试节点"
-    echo "  -reset_day=N   流量重置日(1-31)，默认1"
-    echo "  -rx_correction=N  下行流量校正(GB)，修改当月下行数据"
-    echo "  -tx_correction=N  上行流量校正(GB)，修改当月上行数据"
+    echo "可選引數:"
+    echo "  -interval=N    上報間隔(秒)，預設60"
+    echo "  -ping=TYPE     探測型別: http | tcp，預設http"
+    echo "  -ct=HOST       自定義CT測試節點"
+    echo "  -cu=HOST       自定義CU測試節點"
+    echo "  -cm=HOST       自定義CM測試節點"
+    echo "  -bd=HOST       自定義BD測試節點"
+    echo "  -reset_day=N   流量重置日(1-31)，預設1"
+    echo "  -rx_correction=N  下行流量校正(GB)，修改當月下行資料"
+    echo "  -tx_correction=N  上行流量校正(GB)，修改當月上行資料"
     echo ""
     echo "示例:"
     echo "  sh $0 install -id=server123 -secret=abc123 -url=https://worker.example.com"
@@ -80,12 +80,12 @@ sed_escape() {
 
 check_root() {
     if [ "$(id -u)" != "0" ]; then
-        error "请使用 root 权限运行此脚本: sudo sh $0"
+        error "請使用 root 許可權執行此指令碼: sudo sh $0"
     fi
 }
 
 # ---------------------------------------------------------------
-# OS / Init 系统探测
+# OS / Init 系統探測
 # ---------------------------------------------------------------
 detect_os() {
     if [ -f /etc/alpine-release ]; then
@@ -99,10 +99,10 @@ detect_os() {
 
     case "$OS_ID" in
         alpine) PKG_MGR="apk" ;;
-        *) warn "检测到非 Alpine 系统: $OS_ID，仍将尝试使用 apk" ; PKG_MGR="apk" ;;
+        *) warn "檢測到非 Alpine 系統: $OS_ID，仍將嘗試使用 apk" ; PKG_MGR="apk" ;;
     esac
 
-    # 探测 init 系统
+    # 探測 init 系統
     if command -v rc-service >/dev/null 2>&1 && [ -d /etc/runlevels ]; then
         INIT_SYSTEM="openrc"
     elif [ -d /run/systemd/system ]; then
@@ -113,64 +113,64 @@ detect_os() {
 }
 
 # ---------------------------------------------------------------
-# 依赖安装（Alpine 版）
+# 依賴安裝（Alpine 版）
 # ---------------------------------------------------------------
 install_deps() {
-    step "检查系统依赖组件..."
+    step "檢查系統依賴元件..."
 
-    # 必须先装 bash — 探针脚本内部使用了大量 bash-only 语法
+    # 必須先裝 bash — 探針指令碼內部使用了大量 bash-only 語法
     # coreutils: 提供完整的 df -P、date、nproc、stat 等
     # procps:    提供完整的 ps -e、pgrep、pkill
     # iproute2:  提供 ss
-    # iputils:   提供 ping，用于丢包率探测
+    # iputils:   提供 ping，用於丟包率探測
     local required_pkgs="bash curl grep sed coreutils procps iproute2 iputils"
 
     if ! command -v apk >/dev/null 2>&1; then
-        error "未找到 apk 包管理器，当前系统不是 Alpine Linux。"
+        error "未找到 apk 包管理器，當前系統不是 Alpine Linux。"
     fi
 
-    step "刷新 APK 索引并安装基础依赖..."
+    step "重新整理 APK 索引並安裝基礎依賴..."
     apk update --quiet >/dev/null 2>&1 || true
     # shellcheck disable=SC2086
     apk add --no-cache --quiet $required_pkgs >/dev/null 2>&1 || \
         apk add --no-cache $required_pkgs || \
-        error "依赖包安装失败，请检查网络或手动执行: apk add $required_pkgs"
+        error "依賴包安裝失敗，請檢查網路或手動執行: apk add $required_pkgs"
 
     local required_cmds="bash curl awk grep sed ps df ss nproc pgrep pkill"
     for cmd in $required_cmds; do
         if ! command -v "$cmd" >/dev/null 2>&1; then
-            error "缺少必要依赖: $cmd，请手动安装后重试。"
+            error "缺少必要依賴: $cmd，請手動安裝後重試。"
         fi
     done
 
     if ! command -v ping >/dev/null 2>&1; then
-        warn "未找到 ping，丢包率监控将上报为空；可手动安装: apk add iputils"
+        warn "未找到 ping，丟包率監控將上報為空；可手動安裝: apk add iputils"
     fi
 
-    info "基础依赖组件检查通过（bash/coreutils/procps/iproute2/curl）"
+    info "基礎依賴元件檢查通過（bash/coreutils/procps/iproute2/curl）"
 
-    # 提示 init 情况
+    # 提示 init 情況
     case "$INIT_SYSTEM" in
-        openrc)  info "检测到 OpenRC，将注册为系统服务。" ;;
-        systemd) warn "检测到 systemd — 建议使用原版 install.sh。此处将以手动方式启动。" ;;
-        manual)  warn "未检测到 init 系统（通常是 Docker 容器），将采用后台进程方式运行。" ;;
+        openrc)  info "檢測到 OpenRC，將註冊為系統服務。" ;;
+        systemd) warn "檢測到 systemd — 建議使用原版 install.sh。此處將以手動方式啟動。" ;;
+        manual)  warn "未檢測到 init 系統（通常是 Docker 容器），將採用後臺程序方式執行。" ;;
     esac
 }
 
 # ---------------------------------------------------------------
-# 从旧版本服务文件提取参数
+# 從舊版本服務檔案提取引數
 # ---------------------------------------------------------------
 extract_old_params() {
     if [ -f "${OPENRC_FILE}" ]; then
-        step "检测到旧版本服务文件，提取参数..."
+        step "檢測到舊版本服務檔案，提取引數..."
         
-        # 使用 grep 和 awk 直接提取，完全避免 shell 变量赋值导致的反引号问题
+        # 使用 grep 和 awk 直接提取，完全避免 shell 變數賦值導致的反引號問題
         local raw_line
         raw_line=$(grep "^command_args=" "${OPENRC_FILE}" 2>/dev/null | head -1)
         
         if [ -n "${raw_line}" ]; then
-            # 移除 command_args= 和引号，然后用 awk 按空格分割
-            # 使用 printf 传给 awk，避免 shell 解释
+            # 移除 command_args= 和引號，然後用 awk 按空格分割
+            # 使用 printf 傳給 awk，避免 shell 解釋
             OLD_SERVER_ID=$(printf '%s' "$raw_line" | sed 's/^command_args=//; s/^"//; s/"$//' | awk '{print $2}')
             OLD_SECRET=$(printf '%s' "$raw_line" | sed 's/^command_args=//; s/^"//; s/"$//' | awk '{print $3}')
             OLD_WORKER_URL=$(printf '%s' "$raw_line" | sed 's/^command_args=//; s/^"//; s/"$//' | awk '{print $4}')
@@ -182,15 +182,15 @@ extract_old_params() {
             OLD_BD_NODE=$(printf '%s' "$raw_line" | sed 's/^command_args=//; s/^"//; s/"$//' | awk '{print $10}')
             OLD_RESET_DAY=$(printf '%s' "$raw_line" | sed 's/^command_args=//; s/^"//; s/"$//' | awk '{print $11}')
             
-            # 清理反引号（如果有）
+            # 清理反引號（如果有）
             OLD_WORKER_URL=$(printf '%s' "$OLD_WORKER_URL" | tr -d '`')
             
-            # 清理可能的引号
+            # 清理可能的引號
             OLD_SERVER_ID=$(printf '%s' "$OLD_SERVER_ID" | sed 's/^"//; s/"$//')
             OLD_SECRET=$(printf '%s' "$OLD_SECRET" | sed 's/^"//; s/"$//')
             OLD_WORKER_URL=$(printf '%s' "$OLD_WORKER_URL" | sed 's/^"//; s/"$//')
             
-            echo "提取的参数:"
+            echo "提取的引數:"
             echo "  SERVER_ID: '$OLD_SERVER_ID'"
             echo "  SECRET: '$OLD_SECRET'"
             echo "  WORKER_URL: '$OLD_WORKER_URL'"
@@ -198,7 +198,7 @@ extract_old_params() {
             echo "  PING_TYPE: '$OLD_PING_TYPE'"
             
             if [ -n "${OLD_SERVER_ID}" ] && [ -n "${OLD_SECRET}" ] && [ -n "${OLD_WORKER_URL}" ]; then
-                info "已从旧版本服务文件提取参数"
+                info "已從舊版本服務檔案提取引數"
                 return 0
             fi
         fi
@@ -207,19 +207,19 @@ extract_old_params() {
 }
 
 # ---------------------------------------------------------------
-# 清理旧进程 / 旧服务
+# 清理舊程序 / 舊服務
 # ---------------------------------------------------------------
 stop_old_service() {
-    step "清理可能存在的旧服务进程..."
+    step "清理可能存在的舊服務程序..."
 
-    # OpenRC 服务
+    # OpenRC 服務
     if [ "$INIT_SYSTEM" = "openrc" ] && [ -f "$OPENRC_FILE" ]; then
         rc-service "$SERVICE_NAME" stop >/dev/null 2>&1 || true
         rc-update del "$SERVICE_NAME" default >/dev/null 2>&1 || true
         rm -f "$OPENRC_FILE"
     fi
 
-    # PID 文件方式的后台进程
+    # PID 檔案方式的後臺程序
     if [ -f "$PID_FILE" ]; then
         local old_pid
         old_pid=$(cat "$PID_FILE" 2>/dev/null || echo "")
@@ -231,17 +231,17 @@ stop_old_service() {
         rm -f "$PID_FILE"
     fi
 
-    # 兜底：按进程名杀
+    # 兜底：按程序名殺
     if pgrep -f "${SERVICE_NAME}.sh" >/dev/null 2>&1; then
         pkill -9 -f "${SERVICE_NAME}.sh" >/dev/null 2>&1 || true
     fi
 }
 
 # ---------------------------------------------------------------
-# 注入探针脚本（内部使用 bash，保证语法兼容）
+# 注入探針指令碼（內部使用 bash，保證語法相容）
 # ---------------------------------------------------------------
 create_script() {
-    step "注入工业级监控采集探针..."
+    step "注入工業級監控採集探針..."
 
     cat > "${SCRIPT_FILE}" << 'PROBE_EOF'
 #!/bin/bash
@@ -252,7 +252,7 @@ CONFIG_FILE="${CONFIG_DIR}/config.conf"
 TRAFFIC_DATA_FILE="${CONFIG_DIR}/traffic.dat"
 
 if [ ! -f "${CONFIG_FILE}" ]; then
-    echo "[ERROR] 配置文件不存在: ${CONFIG_FILE}"
+    echo "[ERROR] 配置檔案不存在: ${CONFIG_FILE}"
     exit 1
 fi
 
@@ -275,7 +275,7 @@ REPORT_INTERVAL=${REPORT_INTERVAL:-60}
 PING_TYPE=${PING_TYPE:-http}
 RESET_DAY=${RESET_DAY:-1}
 
-# 严苛环境下的规范 JSON 字段转义函数
+# 嚴苛環境下的規範 JSON 欄位轉義函式
 escape_json() {
     local val="${1:-}"
     val="${val//\\/\\\\}"
@@ -301,7 +301,7 @@ is_leap_year() {
     [ $((year % 4)) -eq 0 ] && [ $((year % 100)) -ne 0 ] || [ $((year % 400)) -eq 0 ]
 }
 
-# 获取当月账单周期起始时间戳（UTC+0）
+# 獲取當月賬單週期起始時間戳（UTC+0）
 get_period_start_ts() {
     local reset_day="$1"
     local now_ts="$2"
@@ -344,7 +344,7 @@ get_period_start_ts() {
     echo "$period_start_ts"
 }
 
-# 计算月度流量（自动持久化）
+# 計算月度流量（自動持久化）
 calc_monthly_traffic() {
     local current_rx="$1"
     local current_tx="$2"
@@ -543,7 +543,7 @@ CM_NODE="${CM_NODE:-}"
 BD_NODE="${BD_NODE:-}"
 
 # ==============================================================================
-# 高并发/无竞态后台网络 Worker 协程
+# 高併發/無競態後臺網路 Worker 協程
 # ==============================================================================
 run_network_worker() {
     set -eu
@@ -574,7 +574,7 @@ run_network_worker() {
     done
 }
 
-# 首次基础数据初始化
+# 首次基礎資料初始化
 NET_STAT=$(get_net_bytes)
 RX_PREV=$(echo "$NET_STAT" | awk '{print $1}'); RX_PREV=${RX_PREV:-0}
 TX_PREV=$(echo "$NET_STAT" | awk '{print $2}'); TX_PREV=${TX_PREV:-0}
@@ -587,14 +587,14 @@ PREV_LOOP_TIME=$(date +%s)
 
 echo "[INFO] CF-Server-Monitor Probe Engine Started Successfully."
 
-# 核心架构升级：在这里脱离主循环，静默启动常驻网络 Worker 协程，无 wait 干扰
+# 核心架構升級：在這裡脫離主迴圈，靜默啟動常駐網路 Worker 協程，無 wait 干擾
 run_network_worker &
 WORKER_PID=$!
 
 while true; do
     LOOP_START_TIME=$(date +%s)
     
-    # Worker 进程健康检查与自动重启
+    # Worker 程序健康檢查與自動重啟
     if ! kill -0 "$WORKER_PID" 2>/dev/null; then
         run_network_worker &
         WORKER_PID=$!
@@ -740,14 +740,14 @@ done
 PROBE_EOF
 
     chmod +x "${SCRIPT_FILE}"
-    info "探针脚本注入完成: ${SCRIPT_FILE}"
+    info "探針指令碼注入完成: ${SCRIPT_FILE}"
 }
 
 # ---------------------------------------------------------------
-# 创建 OpenRC 服务脚本 / 手动启停入口
+# 建立 OpenRC 服務指令碼 / 手動啟停入口
 # ---------------------------------------------------------------
 create_service() {
-    step "构建服务配置..."
+    step "構建服務配置..."
     
     cat > "${OPENRC_FILE}" << EOF
 #!/sbin/openrc-run
@@ -768,10 +768,10 @@ depend() {
 }
 EOF
     chmod +x "${OPENRC_FILE}"
-    info "OpenRC 服务脚本生成: ${OPENRC_FILE}"
+    info "OpenRC 服務指令碼生成: ${OPENRC_FILE}"
 
     echo "#!/bin/sh
-# CF-Server-Monitor 手动启停脚本（Alpine Linux）
+# CF-Server-Monitor 手動啟停指令碼（Alpine Linux）
 START_CMD='/bin/bash ${SCRIPT_FILE} > ${LOG_FILE} 2>&1 &'
 PID_FILE='${PID_FILE}'
 LOG_FILE='${LOG_FILE}'
@@ -779,13 +779,13 @@ LOG_FILE='${LOG_FILE}'
 case \"\${1:-start}\" in
     start)
         if [ -f \"\$PID_FILE\" ] && kill -0 \"\$(cat \$PID_FILE)\" >/dev/null 2>&1; then
-            echo '探针已在运行。'
+            echo '探針已在執行。'
             exit 0
         fi
         nohup /bin/bash ${SCRIPT_FILE} >> \$LOG_FILE 2>&1 &
         echo \$! > \$PID_FILE
         disown >/dev/null 2>&1 || true
-        echo '探针已启动（PID: '\"\$(cat \$PID_FILE)\"'）'
+        echo '探針已啟動（PID: '\"\$(cat \$PID_FILE)\"'）'
         ;;
     stop)
         if [ -f \"\$PID_FILE\" ]; then
@@ -794,17 +794,17 @@ case \"\${1:-start}\" in
             sleep 1
             kill -9 \$PID >/dev/null 2>&1 || true
             rm -f \$PID_FILE
-            echo '探针已停止。'
+            echo '探針已停止。'
         else
             pkill -9 -f '${SERVICE_NAME}.sh' >/dev/null 2>&1 || true
-            echo '未找到 PID 文件，已尝试按进程名清理。'
+            echo '未找到 PID 檔案，已嘗試按程序名清理。'
         fi
         ;;
     status)
         if [ -f \"\$PID_FILE\" ] && kill -0 \"\$(cat \$PID_FILE)\" >/dev/null 2>&1; then
-            echo '运行中（PID: '\"\$(cat \$PID_FILE)\"'）'
+            echo '執行中（PID: '\"\$(cat \$PID_FILE)\"'）'
         else
-            echo '未运行'
+            echo '未執行'
         fi
         ;;
     restart)
@@ -825,29 +825,29 @@ esac
 }
 
 # ---------------------------------------------------------------
-# 启动服务
+# 啟動服務
 # ---------------------------------------------------------------
 start_service() {
-    step "加载进程树并激活监控探针..."
+    step "載入程序樹並激活監控探針..."
 
     if [ "$INIT_SYSTEM" = "openrc" ]; then
         rc-update add "${SERVICE_NAME}" default >/dev/null 2>&1 || true
-        rc-service "${SERVICE_NAME}" restart || error "OpenRC 服务启动失败，请检查日志: tail -n 30 ${LOG_FILE}"
+        rc-service "${SERVICE_NAME}" restart || error "OpenRC 服務啟動失敗，請檢查日誌: tail -n 30 ${LOG_FILE}"
     else
-        sh "${SCRIPT_FILE}.ctl" start || error "后台进程启动失败，请检查日志: tail -n 30 ${LOG_FILE}"
+        sh "${SCRIPT_FILE}.ctl" start || error "後臺程序啟動失敗，請檢查日誌: tail -n 30 ${LOG_FILE}"
     fi
 
     sleep 2
 
     if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" >/dev/null 2>&1; then
-        info "探针监控引擎已进入平稳运行状态。"
+        info "探針監控引擎已進入平穩執行狀態。"
     else
-        error "探针服务未能启动成功。请排查: tail -n 30 ${LOG_FILE}"
+        error "探針服務未能啟動成功。請排查: tail -n 30 ${LOG_FILE}"
     fi
 }
 
 # ---------------------------------------------------------------
-# 安装主流程
+# 安裝主流程
 # ---------------------------------------------------------------
 install_probe() {
     SERVER_ID=""
@@ -863,7 +863,7 @@ install_probe() {
     RX_CORRECTION=""
     TX_CORRECTION=""
 
-    # 用于保存从旧服务文件提取的参数
+    # 用於儲存從舊服務檔案提取的引數
     OLD_SERVER_ID=""
     OLD_SECRET=""
     OLD_WORKER_URL=""
@@ -897,20 +897,20 @@ install_probe() {
     detect_os
     install_deps
 
-    # 在停止旧服务之前，先提取旧参数
+    # 在停止舊服務之前，先提取舊引數
     extract_old_params
 
     stop_old_service
 
     if [ -f "${CONFIG_FILE}" ]; then
-        step "检测到已有配置文件，执行二次安装..."
+        step "檢測到已有配置檔案，執行二次安裝..."
         
         if [ -n "${SERVER_ID}" ] && [ -n "${SECRET}" ] && [ -n "${WORKER_URL}" ]; then
             REPORT_INTERVAL=${REPORT_INTERVAL:-60}
             PING_TYPE=${PING_TYPE:-http}
             RESET_DAY=${RESET_DAY:-1}
             
-            step "更新配置文件..."
+            step "更新配置檔案..."
             cat > "${CONFIG_FILE}" << EOF
 SERVER_ID="${SERVER_ID}"
 SECRET="${SECRET}"
@@ -923,9 +923,9 @@ CM_NODE="${CM_NODE:-}"
 BD_NODE="${BD_NODE:-}"
 RESET_DAY="${RESET_DAY}"
 EOF
-            info "配置文件已更新: ${CONFIG_FILE}"
+            info "配置檔案已更新: ${CONFIG_FILE}"
         else
-            step "从配置文件读取参数..."
+            step "從配置檔案讀取引數..."
             while IFS='=' read -r key value; do
                 case "$key" in
                     SERVER_ID) SERVER_ID="${value%\"}"; SERVER_ID="${SERVER_ID#\"}" ;;
@@ -943,9 +943,9 @@ EOF
         fi
     else
         if [ -z "${SERVER_ID}" ] || [ -z "${SECRET}" ] || [ -z "${WORKER_URL}" ]; then
-            # 使用从旧服务文件提取的参数
+            # 使用從舊服務檔案提取的引數
             if [ -n "${OLD_SERVER_ID}" ] && [ -n "${OLD_SECRET}" ] && [ -n "${OLD_WORKER_URL}" ]; then
-                step "使用从旧服务文件提取的参数..."
+                step "使用從舊服務檔案提取的引數..."
                 SERVER_ID="${OLD_SERVER_ID}"
                 SECRET="${OLD_SECRET}"
                 WORKER_URL="${OLD_WORKER_URL}"
@@ -956,7 +956,7 @@ EOF
                 CM_NODE="${OLD_CM_NODE:-}"
                 BD_NODE="${OLD_BD_NODE:-}"
                 RESET_DAY="${OLD_RESET_DAY:-1}"
-                info "已从旧版本服务文件恢复参数"
+                info "已從舊版本服務檔案恢復引數"
             else
                 print_usage
             fi
@@ -966,20 +966,20 @@ EOF
         PING_TYPE=${PING_TYPE:-http}
         RESET_DAY=${RESET_DAY:-1}
 
-        step "创建配置目录..."
+        step "建立配置目錄..."
         mkdir -p "${CONFIG_DIR}" 2>/dev/null || true
 
         if [ -f "${OLD_TRAFFIC_DATA_FILE}" ]; then
-            step "迁移旧流量数据..."
+            step "遷移舊流量資料..."
             mv "${OLD_TRAFFIC_DATA_FILE}" "${TRAFFIC_DATA_FILE}" 2>/dev/null || true
             rm -rf /var/lib/cf-probe 2>/dev/null || true
-            info "已从旧路径迁移流量数据"
+            info "已從舊路徑遷移流量資料"
         elif [ ! -f "${TRAFFIC_DATA_FILE}" ]; then
             touch "${TRAFFIC_DATA_FILE}" 2>/dev/null || true
-            info "创建新流量数据文件"
+            info "建立新流量資料檔案"
         fi
 
-        step "生成配置文件..."
+        step "生成配置檔案..."
         cat > "${CONFIG_FILE}" << EOF
 SERVER_ID="${SERVER_ID}"
 SECRET="${SECRET}"
@@ -992,11 +992,11 @@ CM_NODE="${CM_NODE:-}"
 BD_NODE="${BD_NODE:-}"
 RESET_DAY="${RESET_DAY}"
 EOF
-        info "配置文件已生成: ${CONFIG_FILE}"
+        info "配置檔案已生成: ${CONFIG_FILE}"
     fi
 
     if [ -n "${RX_CORRECTION}" ] || [ -n "${TX_CORRECTION}" ]; then
-        step "应用流量校正..."
+        step "應用流量校正..."
         rm -f "${OLD_TRAFFIC_DATA_FILE}" 2>/dev/null || true
         
         mkdir -p "${CONFIG_DIR}" 2>/dev/null || true
@@ -1024,72 +1024,72 @@ EOF
     start_service
 
     printf '\n%b=============================================%b\n' "${GREEN}" "${NC}"
-    printf  '         CF-Server-Monitor 安装成功\n'
+    printf  '         CF-Server-Monitor 安裝成功\n'
     printf  '%b=============================================%b\n' "${GREEN}" "${NC}"
-    printf  '  服务状态 : %bActive (Running)%b\n' "${GREEN}" "${NC}"
-    printf  '  配置参数 :\n'
+    printf  '  服務狀態 : %bActive (Running)%b\n' "${GREEN}" "${NC}"
+    printf  '  配置引數 :\n'
     printf  '    ● Server ID   : %s\n' "${SERVER_ID}"
     printf  '    ● Secret      : %s\n' "${SECRET}"
     printf  '    ● Worker URL  : %s\n' "${WORKER_URL}"
-    printf  '    ● 上报间隔    : %s秒\n' "${REPORT_INTERVAL}"
-    printf  '    ● 探测类型    : %s\n' "${PING_TYPE}"
+    printf  '    ● 上報間隔    : %s秒\n' "${REPORT_INTERVAL}"
+    printf  '    ● 探測型別    : %s\n' "${PING_TYPE}"
     [ -n "${RX_CORRECTION}" ] && printf  '    ● 下行校正    : %sGB\n' "${RX_CORRECTION}"
     [ -n "${TX_CORRECTION}" ] && printf  '    ● 上行校正    : %sGB\n' "${TX_CORRECTION}"
-    printf  '    ● 流量重置日  : %s号\n' "${RESET_DAY}"
-    [ -n "${CT_NODE}" ] && printf  '    ● CT节点      : %s\n' "${CT_NODE}"
-    [ -n "${CU_NODE}" ] && printf  '    ● CU节点      : %s\n' "${CU_NODE}"
-    [ -n "${CM_NODE}" ] && printf  '    ● CM节点      : %s\n' "${CM_NODE}"
-    [ -n "${BD_NODE}" ] && printf  '    ● BD节点      : %s\n' "${BD_NODE}"
-    printf  '  运行模式 : '
+    printf  '    ● 流量重置日  : %s號\n' "${RESET_DAY}"
+    [ -n "${CT_NODE}" ] && printf  '    ● CT節點      : %s\n' "${CT_NODE}"
+    [ -n "${CU_NODE}" ] && printf  '    ● CU節點      : %s\n' "${CU_NODE}"
+    [ -n "${CM_NODE}" ] && printf  '    ● CM節點      : %s\n' "${CM_NODE}"
+    [ -n "${BD_NODE}" ] && printf  '    ● BD節點      : %s\n' "${BD_NODE}"
+    printf  '  執行模式 : '
     case "$INIT_SYSTEM" in
-        openrc) echo "OpenRC 系统服务 (${OPENRC_FILE})" ;;
-        *)      echo "手动后台进程 (PID: $(cat "$PID_FILE"))" ;;
+        openrc) echo "OpenRC 系統服務 (${OPENRC_FILE})" ;;
+        *)      echo "手動後臺程序 (PID: $(cat "$PID_FILE"))" ;;
     esac
     printf  '  管理指令 :\n'
     if [ "$INIT_SYSTEM" = "openrc" ]; then
-        printf  '    ● 查看日志     : tail -f %s\n' "${LOG_FILE}"
-        printf  '    ● 查看状态     : rc-service %s status\n' "${SERVICE_NAME}"
-        printf  '    ● 启动/停止    : rc-service %s {start|stop|restart}\n' "${SERVICE_NAME}"
+        printf  '    ● 檢視日誌     : tail -f %s\n' "${LOG_FILE}"
+        printf  '    ● 檢視狀態     : rc-service %s status\n' "${SERVICE_NAME}"
+        printf  '    ● 啟動/停止    : rc-service %s {start|stop|restart}\n' "${SERVICE_NAME}"
     else
-        printf  '    ● 查看日志     : tail -f %s\n' "${LOG_FILE}"
-        printf  '    ● 启动/停止    : sh %s {start|stop|restart|status|log}\n' "${SCRIPT_FILE}.ctl"
+        printf  '    ● 檢視日誌     : tail -f %s\n' "${LOG_FILE}"
+        printf  '    ● 啟動/停止    : sh %s {start|stop|restart|status|log}\n' "${SCRIPT_FILE}.ctl"
     fi
-    printf  '    ● 彻底卸载     : sh %s uninstall\n' "$0"
+    printf  '    ● 徹底解除安裝     : sh %s uninstall\n' "$0"
     printf  '%b=============================================%b\n\n' "${GREEN}" "${NC}"
 }
 
 # ---------------------------------------------------------------
-# 卸载主流程
+# 解除安裝主流程
 # ---------------------------------------------------------------
 
 uninstall_probe() {
     print_banner
-    printf '%b[!] 开始执行无残留深度卸载清理方案...%b\n\n' "${YELLOW}" "${NC}"
+    printf '%b[!] 開始執行無殘留深度解除安裝清理方案...%b\n\n' "${YELLOW}" "${NC}"
     check_root
     detect_os
 
-    step "停用并撤销系统守护进程..."
+    step "停用並撤銷系統守護程序..."
     stop_old_service
 
-    step "清理服务描述性系统文件..."
+    step "清理服務描述性系統檔案..."
     rm -f "${OPENRC_FILE}"
 
-    step "销毁探针物理可执行代码文件..."
+    step "銷燬探針物理可執行程式碼檔案..."
     rm -f "${SCRIPT_FILE}"
     rm -f "${SCRIPT_FILE}.ctl"
 
-    step "抹除共享内存高速缓存区..."
+    step "抹除共享記憶體快取記憶體區..."
     rm -f /dev/shm/.cf_ipv4 /dev/shm/.cf_ipv6 /dev/shm/.cf_ping_* /dev/shm/.cf_loss_* 2>/dev/null || true
 
-    step "抹除流量追踪数据..."
+    step "抹除流量追蹤資料..."
     rm -rf /var/lib/${SERVICE_NAME}
     rm -rf "${CONFIG_DIR}"
 
-    step "清理日志与 PID 文件..."
+    step "清理日誌與 PID 檔案..."
     rm -f "${PID_FILE}" "${LOG_FILE}" 2>/dev/null || true
 
     printf '\n%b╔══════════════════════════════════════════╗%b\n' "${GREEN}" "${NC}"
-    printf  '║     ✓ 卸载完毕！系统环境无任何残留。     ║\n'
+    printf  '║     ✓ 解除安裝完畢！系統環境無任何殘留。     ║\n'
     printf  '%b╚══════════════════════════════════════════╝%b\n\n' "${GREEN}" "${NC}"
 }
 
@@ -1105,7 +1105,7 @@ case "${1:-install}" in
         uninstall_probe
         ;;
     *)
-        echo "未知指令. 可选命令: install | uninstall"
+        echo "未知指令. 可選命令: install | uninstall"
         exit 1
         ;;
 esac

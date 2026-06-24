@@ -740,7 +740,7 @@ const getMaxGapMs = () => {
 }
 
 const applyGapBreak = (data) => {
-  // 超过1小时的数据不使用断点，图表直接连续连接
+  // 超過1小時的資料不使用斷點，圖表直接連續連線
   if (currentHours.value > 1) return data
   if (!data || data.length < 2) return data
   

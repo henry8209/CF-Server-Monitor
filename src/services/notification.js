@@ -40,7 +40,7 @@ export async function sendNotification(settings, msg) {
         })
       });
     } catch (e) {
-      console.error('Telegram 通知发送失败:', e);
+      console.error('Telegram 通知傳送失敗:', e);
     }
   }else{
     try {
@@ -53,7 +53,7 @@ export async function sendNotification(settings, msg) {
         })
       });
     } catch (e) {
-      console.error('企业微信通知发送失败:', e);
+      console.error('企業微信通知傳送失敗:', e);
     }
   }
 }
@@ -64,9 +64,9 @@ export async function checkOfflineNodes(db) {
   if (siteSettings.tg_notify !== 'true'|| !siteSettings.tg_bot_token) return;
 
   const skipCount = parseInt(siteSettings.cleanup_skip_count || '0', 10) || 0;
-  debug(`[Cron] 检测到当前跳过次数: ${skipCount}`);
+  debug(`[Cron] 檢測到當前跳過次數: ${skipCount}`);
   if (skipCount > 0) {
-    debug(`[Cron] 检测到表轮换进行中，跳过离线检测（剩余跳过次数: ${6 - skipCount}）`);
+    debug(`[Cron] 檢測到表輪換進行中，跳過離線檢測（剩餘跳過次數: ${6 - skipCount}）`);
     
     const newCount = skipCount + 1;
     const finalCount = newCount > 5 ? 0 : newCount;
@@ -117,13 +117,13 @@ export async function checkOfflineNodes(db) {
 
     if (offlineNodes.length > 0) {
       const nodeList = offlineNodes.map(n => `• ${n.name}`).join('\n');
-      const msg = `⚠️ **节点离线告警** (${offlineNodes.length}个)\n\n${nodeList}\n\n**时间:** ${new Date().toLocaleString('zh-CN', {timeZone: 'Asia/Shanghai'})}`;
+      const msg = `⚠️ **節點離線告警** (${offlineNodes.length}個)\n\n${nodeList}\n\n**時間:** ${new Date().toLocaleString('zh-CN', {timeZone: 'Asia/Shanghai'})}`;
       await sendNotification(siteSettings, msg);
     }
 
     if (recoveredNodes.length > 0) {
       const nodeList = recoveredNodes.map(n => `• ${n.name}`).join('\n');
-      const msg = `✅ **节点恢复通知** (${recoveredNodes.length}个)\n\n${nodeList}\n\n**时间:** ${new Date().toLocaleString('zh-CN', {timeZone: 'Asia/Shanghai'})}`;
+      const msg = `✅ **節點恢復通知** (${recoveredNodes.length}個)\n\n${nodeList}\n\n**時間:** ${new Date().toLocaleString('zh-CN', {timeZone: 'Asia/Shanghai'})}`;
       await sendNotification(siteSettings, msg);
     }
 
@@ -133,7 +133,7 @@ export async function checkOfflineNodes(db) {
       ).bind(JSON.stringify(alertState)).run();
     }
   } catch (e) {
-    console.error('离线检测失败:', e);
+    console.error('離線檢測失敗:', e);
   }
 }
 
@@ -158,7 +158,7 @@ export async function checkExpiringServers(db) {
       const diff = expTime - now;
       const days = Math.ceil(diff / (1000 * 3600 * 24));
 
-      debug(`[Cron] 检测到服务器 ${s.name} 到期日期 ${s.expire_date}，剩余天数 ${days} 天`);
+      debug(`[Cron] 檢測到伺服器 ${s.name} 到期日期 ${s.expire_date}，剩餘天數 ${days} 天`);
 
       if (days > 0 && days <= REMINDER_DAYS) {
         expiringServers.push({ name: s.name, expire_date: s.expire_date, days });
@@ -166,12 +166,12 @@ export async function checkExpiringServers(db) {
     }
 
     if (expiringServers.length > 0) {
-      const serverList = expiringServers.map(s => `• ${s.name} - 剩余${s.days}天 (${s.expire_date})`).join('\n');
-      const msg = `⏰ **服务器到期提醒** (${expiringServers.length}个)\n\n${serverList}`;
-      debug(`[Cron] 发送到期提醒通知: ${msg}`);
+      const serverList = expiringServers.map(s => `• ${s.name} - 剩餘${s.days}天 (${s.expire_date})`).join('\n');
+      const msg = `⏰ **伺服器到期提醒** (${expiringServers.length}個)\n\n${serverList}`;
+      debug(`[Cron] 傳送到期提醒通知: ${msg}`);
       await sendNotification(siteSettings, msg);
     }
   } catch (e) {
-    console.error('到期检测失败:', e);
+    console.error('到期檢測失敗:', e);
   }
 }

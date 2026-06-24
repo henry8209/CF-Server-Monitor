@@ -11,8 +11,8 @@ import { getServerDetail, getMetricsHistoryCache, setMetricsHistoryCache, getCac
 import { AppError, createSuccessResponse, createUnauthorizedResponse, createBadRequestResponse, createNotFoundResponse, createErrorResponse } from './utils/errors.js';
 import { verifyTurnstileToken } from './utils/common.js';
 import { getCorsAllowedOrigins, createOptionsResponse, applyCors } from './utils/cors.js';
-// Durable Objects: 实时指标广播
-// 显式 import + extends，确保 wrangler 静态分析器能在入口文件直接识别此 DO 类
+// Durable Objects: 即時指標廣播
+// 顯式 import + extends，確保 wrangler 靜態分析器能在入口檔案直接識別此 DO 類
 import { MetricsBroadcaster as _MetricsBroadcaster }
   from './durable/MetricsBroadcaster.js';
 
@@ -98,7 +98,7 @@ async function fetchHistoryData(env, request, id, hours, columns, sys = null) {
   const server = await getServerDetail(env.DB, id, isLoggedIn);
   if (!server) return createNotFoundResponse();
   
-  // 最多查询7天数据
+  // 最多查詢7天資料
   const clampedHours = Math.min(hours, 168);
   const cacheDuration = getCacheDuration(clampedHours);
 
@@ -113,7 +113,7 @@ async function fetchHistoryData(env, request, id, hours, columns, sys = null) {
   } catch (e) {
     const message = e && e.message ? e.message : String(e);
     if (/no such column/i.test(message)) {
-      debug('[History] 数据库字段缺失，可能尚未升级数据库:', message);
+      debug('[History] 資料庫欄位缺失，可能尚未升級資料庫:', message);
       return new Response(JSON.stringify({
         message: 'databaseUpgradeRequired'
       }), {
@@ -168,8 +168,8 @@ export default {
       await initDatabase(env.DB);
     }
 
-    // /api/config 在不带 X-Turnstile-Token 且不带 X-Turnstile-Verified 时仍然 bypass（用于初始化判断是否需要验证），
-    // 带 token 或 verified header 时则走完整验证流程，以便复用 verified 字段返回验证结果
+    // /api/config 在不帶 X-Turnstile-Token 且不帶 X-Turnstile-Verified 時仍然 bypass（用於初始化判斷是否需要驗證），
+    // 帶 token 或 verified header 時則走完整驗證流程，以便複用 verified 欄位返回驗證結果
     const isTurnstileBypassed = (reqPath) => {
       if (bypassTurnstilePaths.includes(reqPath)) return true;
       if (reqPath === '/api/config' && !request.headers.get('X-Turnstile-Token') && !request.headers.get('X-Turnstile-Verified')) return true;
@@ -260,7 +260,7 @@ export default {
         const id = url.searchParams.get('id');
         const hours = parseFloat(url.searchParams.get('hours') || '24');
         const allColumns = 'cpu, gpu, gpu_info, ram_total, ram_used, disk_total, disk_used, processes, net_in_speed, net_out_speed, tcp_conn, udp_conn, ping_ct, ping_cu, ping_cm, ping_bd, loss_ct, loss_cu, loss_cm, loss_bd, swap_total, swap_used, load_avg, region';
-        // 后续版本可以删掉region 字段，用于升级数据库提示
+        // 後續版本可以刪掉region 欄位，用於升級資料庫提示
         return fetchHistoryData(env, request, id, hours, allColumns, sys);
       }},
       { method: 'POST', path: '/admin/api', handler: async () => {
@@ -289,7 +289,7 @@ export default {
       if (route.method === method && route.path === path) {
         const response = await route.handler();
 
-        // WebSocket 升级响应直接原样返回，不能修改 response 对象
+        // WebSocket 升級響應直接原樣返回，不能修改 response 物件
         if (response.status === 101) {
           return response;
         }
@@ -322,47 +322,47 @@ export default {
 
   async scheduled(event, env, ctx) {
     const cron = event.cron;
-    debug(`[Cron] 定时任务触发: ${cron}`);
+    debug(`[Cron] 定時任務觸發: ${cron}`);
     
     if (cron === '*/1 * * * *') {
-      debug('[Cron] 开始执行离线节点检测');
+      debug('[Cron] 開始執行離線節點檢測');
       await checkOfflineNodes(env.DB);
-      debug('[Cron] 离线节点检测完成');
+      debug('[Cron] 離線節點檢測完成');
     } else if (cron === '0 * * * *') {
       const now = new Date();
       const day = now.getUTCDate();
       const hour = now.getUTCHours();
       
       if (day === 1 && hour === 0) {
-        debug('[Cron] 开始执行每月数据清理任务（表轮换）');
+        debug('[Cron] 開始執行每月資料清理任務（表輪換）');
         await monthlyCleanup(env.DB);
-        debug('[Cron] 每月数据清理任务完成');
+        debug('[Cron] 每月資料清理任務完成');
       }
       
       if (day === 8 && hour === 0) {
-        debug('[Cron] 开始执行每月8号清理旧表任务');
+        debug('[Cron] 開始執行每月8號清理舊錶任務');
         await dropMetricsHistoryOld(env.DB);
-        debug('[Cron] 每月8号清理旧表任务完成');
+        debug('[Cron] 每月8號清理舊錶任務完成');
       }
       
       if (hour === 12) {
-        debug('[Cron] 开始执行服务器到期检测');
+        debug('[Cron] 開始執行伺服器到期檢測');
         await checkExpiringServers(env.DB);
-        debug('[Cron] 服务器到期检测完成');
+        debug('[Cron] 伺服器到期檢測完成');
       }
     }else if(env.DEBUG == 1){
       if (cron === '* * 1 * *') {
-        debug('[Cron DEBUG] 开始执行每月数据清理任务（表轮换）');
+        debug('[Cron DEBUG] 開始執行每月資料清理任務（表輪換）');
         await monthlyCleanup(env.DB);
-        debug('[Cron DEBUG] 每月数据清理任务完成');
+        debug('[Cron DEBUG] 每月資料清理任務完成');
       } else if (cron === '* * 8 * *') {
-        debug('[Cron DEBUG] 开始执行每月8号清理旧表任务');
+        debug('[Cron DEBUG] 開始執行每月8號清理舊錶任務');
         await dropMetricsHistoryOld(env.DB);
-        debug('[Cron DEBUG] 每月8号清理旧表任务完成');
+        debug('[Cron DEBUG] 每月8號清理舊錶任務完成');
       } else if (cron === '0 12 * * *') {
-        debug('[Cron DEBUG] 开始执行服务器到期检测');
+        debug('[Cron DEBUG] 開始執行伺服器到期檢測');
         await checkExpiringServers(env.DB);
-        debug('[Cron DEBUG] 服务器到期检测完成');
+        debug('[Cron DEBUG] 伺服器到期檢測完成');
       }
     }
   }

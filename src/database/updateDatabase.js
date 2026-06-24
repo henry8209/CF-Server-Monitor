@@ -1,32 +1,32 @@
 export async function updateDatabase(db) {
-  console.log('开始执行数据库更新...');
+  console.log('開始執行資料庫更新...');
   const results = [];
   
   try {
     const migrateLoad = await migrateLoadToLoadAvg(db);
-    results.push({ name: 'metrics_history load -> load_avg 迁移', ...migrateLoad });
+    results.push({ name: 'metrics_history load -> load_avg 遷移', ...migrateLoad });
     
     const serversCols = await addServerColumns(db);
     results.push({ name: 'servers 表列更新', ...serversCols });
     
     const cleanupServers = await cleanupServerExtraColumns(db);
-    results.push({ name: 'servers 表多余字段清理', ...cleanupServers });
+    results.push({ name: 'servers 表多餘欄位清理', ...cleanupServers });
     
     const historyCols = await addHistoryColumns(db);
     results.push({ name: 'metrics_history 表列更新', ...historyCols });
 
-    // 无需清理metrics_history多余字段，消耗过大，不影响使用，每月执行monthlyCleanup的时候会自动清理
+    // 無需清理metrics_history多餘欄位，消耗過大，不影響使用，每月執行monthlyCleanup的時候會自動清理
 
     const historyRowid = await optimizeMetricsHistoryRowid(db);
-    results.push({ name: 'metrics_history 写入优化', ...historyRowid });
+    results.push({ name: 'metrics_history 寫入最佳化', ...historyRowid });
     
     const staleCleanup = await cleanupStaleSettings(db);
-    results.push({ name: '废弃 settings key 清理', ...staleCleanup });
+    results.push({ name: '廢棄 settings key 清理', ...staleCleanup });
     
     const dropAggregated = await dropMetricsAggregatedTable(db);
-    results.push({ name: '删除弃用的 metrics_aggregated 表', ...dropAggregated });
+    results.push({ name: '刪除棄用的 metrics_aggregated 表', ...dropAggregated });
     
-    console.log('✅ 数据库更新完成');
+    console.log('✅ 資料庫更新完成');
     
     return {
       success: true,
@@ -34,7 +34,7 @@ export async function updateDatabase(db) {
       results
     };
   } catch (e) {
-    console.error('❌ 数据库更新失败:', e);
+    console.error('❌ 資料庫更新失敗:', e);
     return {
       success: false,
       message: 'databaseUpgradeFailed',
@@ -50,7 +50,7 @@ async function migrateLoadToLoadAvg(db) {
     const existingCols = columns.map(c => c.name);
     
     if (!existingCols.includes('load')) {
-      return { success: true, migrated: 0, message: '无需迁移（没有旧的 load 字段）' };
+      return { success: true, migrated: 0, message: '無需遷移（沒有舊的 load 欄位）' };
     }
     
     let migrated = 0;
@@ -65,11 +65,11 @@ async function migrateLoadToLoadAvg(db) {
     migrated = updateResult.changes;
     
     await db.prepare(`ALTER TABLE metrics_history DROP COLUMN load`).run();
-    console.log(`✅ 已迁移 ${migrated} 条记录的 load -> load_avg`);
+    console.log(`✅ 已遷移 ${migrated} 條記錄的 load -> load_avg`);
     
-    return { success: true, migrated, message: `已迁移 ${migrated} 条记录并删除旧字段` };
+    return { success: true, migrated, message: `已遷移 ${migrated} 條記錄並刪除舊欄位` };
   } catch (e) {
-    console.error('迁移 load -> load_avg 失败:', e);
+    console.error('遷移 load -> load_avg 失敗:', e);
     return { success: false, error: e.message };
   }
 }
@@ -98,7 +98,7 @@ async function addServerColumns(db) {
     
     return { success: true, added };
   } catch (e) {
-    console.error('添加 servers 表列失败:', e);
+    console.error('新增 servers 表列失敗:', e);
     return { success: false, error: e.message };
   }
 }
@@ -112,17 +112,17 @@ async function cleanupServerExtraColumns(db) {
     const colsToDrop = extraCols.filter(col => existingCols.includes(col));
     
     if (colsToDrop.length === 0) {
-      return { success: true, cleaned: 0, message: '无需清理（没有多余字段）' };
+      return { success: true, cleaned: 0, message: '無需清理（沒有多餘欄位）' };
     }
     
     for (const col of colsToDrop) {
       await db.prepare(`ALTER TABLE servers DROP COLUMN ${col}`).run();
-      console.log(`✅ 已删除 servers 表的 ${col} 字段`);
+      console.log(`✅ 已刪除 servers 表的 ${col} 欄位`);
     }
     
-    return { success: true, cleaned: colsToDrop.length, message: `已删除 ${colsToDrop.join(', ')} 字段` };
+    return { success: true, cleaned: colsToDrop.length, message: `已刪除 ${colsToDrop.join(', ')} 欄位` };
   } catch (e) {
-    console.error('清理 servers 表多余字段失败:', e);
+    console.error('清理 servers 表多餘欄位失敗:', e);
     return { success: false, error: e.message };
   }
 }
@@ -161,7 +161,7 @@ export async function addHistoryColumns(db) {
     
     return { success: true, added };
   } catch (e) {
-    console.error('添加 metrics_history 表列失败:', e);
+    console.error('新增 metrics_history 表列失敗:', e);
     return { success: false, error: e.message };
   }
 }
@@ -181,14 +181,14 @@ async function optimizeMetricsHistoryRowid(db) {
         CREATE INDEX IF NOT EXISTS idx_history_server_time
         ON metrics_history(server_id, timestamp)
       `).run();
-      return { success: true, optimized: 0, message: '已是优化结构' };
+      return { success: true, optimized: 0, message: '已是最佳化結構' };
     }
 
     const oldTable = await db.prepare(
       `SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'metrics_history_old'`
     ).first();
     if (oldTable) {
-      return { success: false, error: '检测到上次迁移遗留的 metrics_history_old，请先人工确认后处理' };
+      return { success: false, error: '檢測到上次遷移遺留的 metrics_history_old，請先人工確認後處理' };
     }
 
     await db.prepare(`DROP INDEX IF EXISTS idx_history_server_time`).run();
@@ -276,35 +276,35 @@ async function optimizeMetricsHistoryRowid(db) {
     `).run();
     await db.prepare(`DROP TABLE metrics_history_old`).run();
 
-    return { success: true, optimized: 1, message: '已移除 AUTOINCREMENT，降低上报写入放大' };
+    return { success: true, optimized: 1, message: '已移除 AUTOINCREMENT，降低上報寫入放大' };
   } catch (e) {
-    console.error('优化 metrics_history 写入结构失败:', e);
+    console.error('最佳化 metrics_history 寫入結構失敗:', e);
     return { success: false, error: e.message };
   }
 }
 
 async function dropMetricsAggregatedTable(db) {
-  console.log('开始删除弃用的 metrics_aggregated 表...');
+  console.log('開始刪除棄用的 metrics_aggregated 表...');
   try {
     const { results: tables } = await db.prepare(
       `SELECT name FROM sqlite_master WHERE type='table' AND name='metrics_aggregated'`
     ).all();
     
     if (tables.length === 0) {
-      return { success: true, dropped: 0, message: '无需删除（表不存在）' };
+      return { success: true, dropped: 0, message: '無需刪除（表不存在）' };
     }
     
     await db.prepare(`DROP TABLE metrics_aggregated`).run();
-    console.log('✅ 已删除 metrics_aggregated 表');
-    return { success: true, dropped: 1, message: '已删除 metrics_aggregated 表' };
+    console.log('✅ 已刪除 metrics_aggregated 表');
+    return { success: true, dropped: 1, message: '已刪除 metrics_aggregated 表' };
   } catch (e) {
-    console.error('删除 metrics_aggregated 表失败:', e);
+    console.error('刪除 metrics_aggregated 表失敗:', e);
     return { success: false, error: e.message };
   }
 }
 
 export async function cleanupStaleSettings(db) {
-  console.log('开始清理废弃的 settings key...');
+  console.log('開始清理廢棄的 settings key...');
   try {
     const stalePrefixes = ['last_write_%'];
     const staleExact = [
@@ -340,11 +340,11 @@ export async function cleanupStaleSettings(db) {
       `DELETE FROM settings WHERE ${staleKeysWhere}`
     ).bind(...staleBindings).run();
     if (cleanupResult.changes > 0) {
-      console.log(`已清理 ${cleanupResult.changes} 个废弃的 settings key`);
+      console.log(`已清理 ${cleanupResult.changes} 個廢棄的 settings key`);
     }
     return { success: true, cleaned: cleanupResult.changes };
   } catch (e) {
-    console.error('清理废弃 settings key 失败:', e);
+    console.error('清理廢棄 settings key 失敗:', e);
     return { success: false, error: e.message };
   }
 }

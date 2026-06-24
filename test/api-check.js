@@ -81,7 +81,7 @@ async function request(path, options = {}) {
     return {
       ok: false,
       status: 0,
-      error: error.name === 'AbortError' ? `请求超时：${timeoutMs}ms` : error.message
+      error: error.name === 'AbortError' ? `請求超時：${timeoutMs}ms` : error.message
     };
   } finally {
     clearTimeout(timer);
@@ -105,7 +105,7 @@ async function runCase(testCase) {
     record('pass', testCase.name, result.status, testCase.note || '');
   } else {
     const detail = result.ok
-      ? `期望 ${expectedText(expected)}，实际 ${result.status}${result.text ? `，响应：${truncate(result.text)}` : ''}`
+      ? `期望 ${expectedText(expected)}，實際 ${result.status}${result.text ? `，響應：${truncate(result.text)}` : ''}`
       : result.error;
     record('fail', testCase.name, result.status || '-', detail);
   }
@@ -128,7 +128,7 @@ function truncate(text, max = 180) {
 }
 
 function printUsage() {
-  console.log(`本地接口测试工具\n\n用法：\n  node test/api-check.js [选项]\n\n选项：\n  --base-url=http://localhost:8787       本地服务地址，默认 ${DEFAULT_BASE_URL}\n  --api-secret=xxx                       API_SECRET，用于登录和可选写入测试\n  --admin-user=admin                     管理员用户名，默认 admin\n  --admin-password=xxx                   管理员密码，默认使用 API_SECRET\n  --server-id=uuid                       指定服务器 ID\n  --timeout=10000                        单个请求超时时间\n\n环境变量同名可用：BASE_URL、API_SECRET、ADMIN_USER、ADMIN_PASSWORD、SERVER_ID、INCLUDE_WRITE、TIMEOUT_MS\n\n说明：\n  默认只执行安全或只读检查；重建数据库、清理历史、删除服务器等破坏性接口不会执行。\n  Cloudflare Turnstile 开启时，只验证未携带 token 会失败，不尝试绕过人机验证。`);
+  console.log(`本地介面測試工具\n\n用法：\n  node test/api-check.js [選項]\n\n選項：\n  --base-url=http://localhost:8787       本地服務地址，預設 ${DEFAULT_BASE_URL}\n  --api-secret=xxx                       API_SECRET，用於登入和可選寫入測試\n  --admin-user=admin                     管理員使用者名稱，預設 admin\n  --admin-password=xxx                   管理員密碼，預設使用 API_SECRET\n  --server-id=uuid                       指定伺服器 ID\n  --timeout=10000                        單個請求超時時間\n\n環境變數同名可用：BASE_URL、API_SECRET、ADMIN_USER、ADMIN_PASSWORD、SERVER_ID、INCLUDE_WRITE、TIMEOUT_MS\n\n說明：\n  預設只執行安全或只讀檢查；重建資料庫、清理歷史、刪除伺服器等破壞性介面不會執行。\n  Cloudflare Turnstile 開啟時，只驗證未攜帶 token 會失敗，不嘗試繞過人機驗證。`);
 }
 
 async function bootstrap() {
@@ -137,65 +137,65 @@ async function bootstrap() {
     process.exit(0);
   }
 
-  console.log(`接口测试目标：${baseUrl}`);
-  console.log(`写入测试：${includeWrite ? '开启' : '关闭'}`);
+  console.log(`介面測試目標：${baseUrl}`);
+  console.log(`寫入測試：${includeWrite ? '開啟' : '關閉'}`);
   console.log('');
 
   // ============================================================
-  // 定义测试用例
+  // 定義測試用例
   // ============================================================
 
-  // 未登录测试用例
+  // 未登入測試用例
   const unauthenticatedCases = [
     { name: 'GET /api/config', method: 'GET', path: '/api/config', expectedStatus: 200 },
     { name: 'GET /api/servers', method: 'GET', path: '/api/servers', expectedStatus: 200 },
     { name: 'GET /api/server 缺少 ID', method: 'GET', path: '/api/server', expectedStatus: 400 },
     { name: 'GET /api/history/all 缺少 ID', method: 'GET', path: '/api/history/all', expectedStatus: 400 },
-    { name: 'GET /api/ws', method: 'GET', path: '/api/ws', expectedStatus: 426, note: 'WebSocket 仅做 HTTP 探测' },
+    { name: 'GET /api/ws', method: 'GET', path: '/api/ws', expectedStatus: 426, note: 'WebSocket 僅做 HTTP 探測' },
     { name: 'POST /updateDatabase', method: 'POST', path: '/updateDatabase', expectedStatus: 401 },
     { name: 'POST /rebuild', method: 'POST', path: '/rebuild', expectedStatus: 401 },
     { name: 'GET /__do/health', method: 'GET', path: '/__do/health', expectedStatus: 200 },
-    { name: 'POST /update 无效 secret', method: 'POST', path: '/update', expectedStatus: 401, body: { id: MOCK_PUBLIC_SERVER_ID, secret: '__invalid__', metrics: {} } },
-    { name: 'POST /update 公开服务器上报成功', method: 'POST', path: '/update', expectedStatus: 200, body: { id: MOCK_PUBLIC_SERVER_ID, secret: apiSecret, metrics: buildMockMetrics() } },
-    { name: 'POST /update 隐藏服务器上报成功', method: 'POST', path: '/update', expectedStatus: 200, body: { id: MOCK_HIDDEN_SERVER_ID, secret: apiSecret, metrics: buildMockMetrics() } },
-    { name: 'GET /api/server 公开服务器（未登录）', method: 'GET', path: `/api/server?id=${encodeURIComponent(MOCK_PUBLIC_SERVER_ID)}`, expectedStatus: 200 },
-    { name: 'GET /api/server 隐藏服务器（未登录）', method: 'GET', path: `/api/server?id=${encodeURIComponent(MOCK_HIDDEN_SERVER_ID)}`, expectedStatus: 404 },
-    { name: 'GET 不存在路径', method: 'GET', path: '/__api_check_not_found__', expectedStatus: 200, note: 'Worker 未命中 API 路由时会回退前端' }
+    { name: 'POST /update 無效 secret', method: 'POST', path: '/update', expectedStatus: 401, body: { id: MOCK_PUBLIC_SERVER_ID, secret: '__invalid__', metrics: {} } },
+    { name: 'POST /update 公開伺服器上報成功', method: 'POST', path: '/update', expectedStatus: 200, body: { id: MOCK_PUBLIC_SERVER_ID, secret: apiSecret, metrics: buildMockMetrics() } },
+    { name: 'POST /update 隱藏伺服器上報成功', method: 'POST', path: '/update', expectedStatus: 200, body: { id: MOCK_HIDDEN_SERVER_ID, secret: apiSecret, metrics: buildMockMetrics() } },
+    { name: 'GET /api/server 公開伺服器（未登入）', method: 'GET', path: `/api/server?id=${encodeURIComponent(MOCK_PUBLIC_SERVER_ID)}`, expectedStatus: 200 },
+    { name: 'GET /api/server 隱藏伺服器（未登入）', method: 'GET', path: `/api/server?id=${encodeURIComponent(MOCK_HIDDEN_SERVER_ID)}`, expectedStatus: 404 },
+    { name: 'GET 不存在路徑', method: 'GET', path: '/__api_check_not_found__', expectedStatus: 200, note: 'Worker 未命中 API 路由時會回退前端' }
   ];
 
-  // 登录测试用例
+  // 登入測試用例
   const loginCases = [
-    { name: 'POST /admin/api login 缺少密码', method: 'POST', path: '/admin/api', expectedStatus: 400, body: { action: 'login', username: adminUsername } },
-    { name: 'POST /admin/api login 无效密码', method: 'POST', path: '/admin/api', expectedStatus: 401, body: { action: 'login', username: adminUsername, password: '__invalid__' } },
+    { name: 'POST /admin/api login 缺少密碼', method: 'POST', path: '/admin/api', expectedStatus: 400, body: { action: 'login', username: adminUsername } },
+    { name: 'POST /admin/api login 無效密碼', method: 'POST', path: '/admin/api', expectedStatus: 401, body: { action: 'login', username: adminUsername, password: '__invalid__' } },
     { name: 'POST /admin/api login 成功', method: 'POST', path: '/admin/api', expectedStatus: 200, body: { action: 'login', username: adminUsername, password: adminPassword } }
   ];
 
-  // 已登录测试用例
+  // 已登入測試用例
   const authenticatedCases = [
-    { name: 'GET /api/server 公开服务器（已登录）', method: 'GET', path: `/api/server?id=${encodeURIComponent(MOCK_PUBLIC_SERVER_ID)}`, expectedStatus: 200 },
-    { name: 'GET /api/server 隐藏服务器（已登录）', method: 'GET', path: `/api/server?id=${encodeURIComponent(MOCK_HIDDEN_SERVER_ID)}`, expectedStatus: 200 },
-    { name: 'GET /api/history/all 公开服务器（已登录）', method: 'GET', path: `/api/history/all?id=${encodeURIComponent(MOCK_PUBLIC_SERVER_ID)}&hours=1`, expectedStatus: 200 },
-    { name: 'GET /api/history/all 隐藏服务器（已登录）', method: 'GET', path: `/api/history/all?id=${encodeURIComponent(MOCK_HIDDEN_SERVER_ID)}&hours=1`, expectedStatus: 200 }
+    { name: 'GET /api/server 公開伺服器（已登入）', method: 'GET', path: `/api/server?id=${encodeURIComponent(MOCK_PUBLIC_SERVER_ID)}`, expectedStatus: 200 },
+    { name: 'GET /api/server 隱藏伺服器（已登入）', method: 'GET', path: `/api/server?id=${encodeURIComponent(MOCK_HIDDEN_SERVER_ID)}`, expectedStatus: 200 },
+    { name: 'GET /api/history/all 公開伺服器（已登入）', method: 'GET', path: `/api/history/all?id=${encodeURIComponent(MOCK_PUBLIC_SERVER_ID)}&hours=1`, expectedStatus: 200 },
+    { name: 'GET /api/history/all 隱藏伺服器（已登入）', method: 'GET', path: `/api/history/all?id=${encodeURIComponent(MOCK_HIDDEN_SERVER_ID)}&hours=1`, expectedStatus: 200 }
   ];
 
-  // 后台管理测试用例
+  // 後臺管理測試用例
   const adminCases = [
     { name: 'POST /admin/api get_settings', method: 'POST', path: '/admin/api', expectedStatus: 200, body: { action: 'get_settings' } },
     { name: 'POST /admin/api list', method: 'POST', path: '/admin/api', expectedStatus: 200, body: { action: 'list' } },
     { name: 'POST /admin/api 未知 action', method: 'POST', path: '/admin/api', expectedStatus: 400, body: { action: '__unknown__' } },
-    { name: 'POST /admin/api edit 参数校验', method: 'POST', path: '/admin/api', expectedStatus: 400, body: { action: 'edit', id: 'invalid-id' } },
-    { name: 'POST /admin/api delete 参数校验', method: 'POST', path: '/admin/api', expectedStatus: 400, body: { action: 'delete', id: 'invalid-id' } },
-    { name: 'POST /admin/api batch_delete 参数校验', method: 'POST', path: '/admin/api', expectedStatus: 400, body: { action: 'batch_delete', ids: [] } },
-    { name: 'POST /admin/api save_order 参数校验', method: 'POST', path: '/admin/api', expectedStatus: 400, body: { action: 'save_order', orders: [] } },
+    { name: 'POST /admin/api edit 引數校驗', method: 'POST', path: '/admin/api', expectedStatus: 400, body: { action: 'edit', id: 'invalid-id' } },
+    { name: 'POST /admin/api delete 引數校驗', method: 'POST', path: '/admin/api', expectedStatus: 400, body: { action: 'delete', id: 'invalid-id' } },
+    { name: 'POST /admin/api batch_delete 引數校驗', method: 'POST', path: '/admin/api', expectedStatus: 400, body: { action: 'batch_delete', ids: [] } },
+    { name: 'POST /admin/api save_order 引數校驗', method: 'POST', path: '/admin/api', expectedStatus: 400, body: { action: 'save_order', orders: [] } },
     { name: 'POST /admin/api add 成功', method: 'POST', path: '/admin/api', expectedStatus: 200, body: { action: 'add', name: 'test-server-' + Date.now(), secret: 'test-secret-' + Date.now(), group_id: 0, location: 'Test Location', ip: '127.0.0.1', ssh_port: 22, ssh_user: 'root', ssh_password: '', note: 'API test server' }, write: true },
     { name: 'POST /admin/api delete 成功', method: 'POST', path: '/admin/api', expectedStatus: 200, body: () => ({ action: 'delete', id: state.createdServerId }), write: true, dependsOn: 'POST /admin/api add 成功' }
   ];
 
   // ============================================================
-  // 执行测试
+  // 執行測試
   // ============================================================
 
-  console.log('\n━━━ [未登录] 测试 ━━━\n');
+  console.log('\n━━━ [未登入] 測試 ━━━\n');
 
   for (const c of unauthenticatedCases) {
     await runCase({
@@ -214,7 +214,7 @@ async function bootstrap() {
     });
   }
 
-  console.log('\n━━━ [登录流程] ━━━\n');
+  console.log('\n━━━ [登入流程] ━━━\n');
 
   for (const c of loginCases) {
     await runCase({
@@ -234,9 +234,9 @@ async function bootstrap() {
   }
 
   if (!state.token) {
-    record('skip', '已登录接口测试', '-', '未登录成功，跳过需要 Bearer Token 的接口');
+    record('skip', '已登入介面測試', '-', '未登入成功，跳過需要 Bearer Token 的介面');
   } else {
-    console.log('\n━━━ [已登录] 测试 ━━━\n');
+    console.log('\n━━━ [已登入] 測試 ━━━\n');
 
     const headers = { 'Content-Type': 'application/json', ...authHeaders() };
 
@@ -248,15 +248,15 @@ async function bootstrap() {
       });
     }
 
-    console.log('\n━━━ [后台管理] 测试 ━━━\n');
+    console.log('\n━━━ [後臺管理] 測試 ━━━\n');
 
     for (const c of adminCases) {
       if (c.write && !includeWrite) {
-        record('skip', c.name, '-', '写入测试已关闭');
+        record('skip', c.name, '-', '寫入測試已關閉');
         continue;
       }
       if (c.dependsOn && !state.createdServerId) {
-        record('skip', c.name, '-', '依赖于 ' + c.dependsOn + '，但该测试未成功');
+        record('skip', c.name, '-', '依賴於 ' + c.dependsOn + '，但該測試未成功');
         continue;
       }
       const body = typeof c.body === 'function' ? c.body() : c.body;
@@ -271,7 +271,7 @@ async function bootstrap() {
         after: c.name === 'POST /admin/api add 成功' ? async result => {
           if (result.status === 200 && result.data && result.data.id) {
             state.createdServerId = result.data.id;
-            console.log('add 成功，服务器 ID:', state.createdServerId);
+            console.log('add 成功，伺服器 ID:', state.createdServerId);
           }
         } : undefined
       });
@@ -321,7 +321,7 @@ function printSummary() {
   }, {});
 
   console.log('');
-  console.log(`汇总：通过 ${counts.pass || 0}，失败 ${counts.fail || 0}，跳过 ${counts.skip || 0}`);
+  console.log(`彙總：通過 ${counts.pass || 0}，失敗 ${counts.fail || 0}，跳過 ${counts.skip || 0}`);
 
   if (counts.fail > 0) {
     process.exitCode = 1;

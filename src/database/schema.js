@@ -89,41 +89,41 @@ export async function initDatabase(db) {
       ON metrics_history(server_id, timestamp)
     `).run();
 
-    debug('✅ 数据库初始化完成');
+    debug('✅ 資料庫初始化完成');
     dbInitialized = true;
   } catch (e) {
-    console.error('❌ 数据库初始化失败:', e);
+    console.error('❌ 資料庫初始化失敗:', e);
   }
 }
 
 export async function rebuildDatabase(db) {
-  debug('开始执行数据库重建...');
+  debug('開始執行資料庫重建...');
   
   try {
     await db.prepare(`DROP TABLE IF EXISTS metrics_history`).run();
-    debug('✅ 已删除 metrics_history 表');
+    debug('✅ 已刪除 metrics_history 表');
 
     await db.prepare(`DROP TABLE IF EXISTS metrics_history_old`).run();
-    debug('✅ 已删除 metrics_history_old 表');
+    debug('✅ 已刪除 metrics_history_old 表');
     
     await db.prepare(`DROP TABLE IF EXISTS servers`).run();
-    debug('✅ 已删除 servers 表');
+    debug('✅ 已刪除 servers 表');
     
     await db.prepare(`DROP TABLE IF EXISTS settings`).run();
-    debug('✅ 已删除 settings 表');
+    debug('✅ 已刪除 settings 表');
     
     dbInitialized = false;
     
     await initDatabase(db);
     
-    debug('✅ 数据库重建完成');
+    debug('✅ 資料庫重建完成');
     
     return {
       success: true,
       message: 'databaseRebuiltSuccess'
     };
   } catch (e) {
-    console.error('❌ 数据库重建失败:', e);
+    console.error('❌ 資料庫重建失敗:', e);
     return {
       success: false,
       message: 'databaseRebuiltFailed',
@@ -175,16 +175,16 @@ export async function getMetricsHistory(db, serverId, hours, columns) {
     'cutoff:', new Date(cutoff).toISOString()
   );
 
-  // 判断是否需要查询 metrics_history_old 表
-  // 获取当前月份的第一天 00:00:00 的时间戳
+  // 判斷是否需要查詢 metrics_history_old 表
+  // 獲取當前月份的第一天 00:00:00 的時間戳
   const nowDate = new Date(now);
   const currentMonthStart = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1).getTime();
   
-  // 如果 cutoff 在当前月份之前，说明需要查询旧表
+  // 如果 cutoff 在當前月份之前，說明需要查詢舊錶
   const needOldTable = cutoff < currentMonthStart;
   // const needOldTable = true;
   
-  // 检查 metrics_history_old 表是否存在
+  // 檢查 metrics_history_old 表是否存在
   let oldTableExists = false;
   if (needOldTable) {
     const oldTable = await db.prepare(
@@ -196,8 +196,8 @@ export async function getMetricsHistory(db, serverId, hours, columns) {
   let rawResult;
   
   if (needOldTable && oldTableExists) {
-    // 跨月查询，使用 UNION ALL
-    debug('[History] 跨月查询，合并 metrics_history 和 metrics_history_old');
+    // 跨月查詢，使用 UNION ALL
+    debug('[History] 跨月查詢，合併 metrics_history 和 metrics_history_old');
     
     rawResult = await db.prepare(`
       WITH sampled AS (
@@ -227,7 +227,7 @@ export async function getMetricsHistory(db, serverId, hours, columns) {
       WHERE rn = 1
     `).bind(intervalMs, serverId, cutoff, serverId, cutoff).all();
   } else {
-    // 单表查询
+    // 單表查詢
     rawResult = await db.prepare(`
       WITH sampled AS (
         SELECT 
@@ -265,47 +265,47 @@ export async function getMetricsHistory(db, serverId, hours, columns) {
 export async function dropMetricsHistoryOld(db) {
   try {
     await db.prepare(`DROP TABLE IF EXISTS metrics_history_old`).run();
-    debug('[Cleanup] 已删除 metrics_history_old 表');
+    debug('[Cleanup] 已刪除 metrics_history_old 表');
     return { success: true };
   } catch (e) {
-    console.error('[Cleanup] 删除 metrics_history_old 表失败:', e);
+    console.error('[Cleanup] 刪除 metrics_history_old 表失敗:', e);
     return { success: false, error: e.message };
   }
 }
 
 export async function monthlyCleanup(db) {
   try {
-    debug('[Cleanup] 开始执行表轮换操作...');
+    debug('[Cleanup] 開始執行表輪換操作...');
     
     await saveSiteOptions(db, { cleanup_skip_count: '1' });
     debug('cleanup_skip_count set to 1');
     
-    // 1. 删除旧的 metrics_history_old 表（如果存在）
+    // 1. 刪除舊的 metrics_history_old 表（如果存在）
     await db.prepare(`DROP TABLE IF EXISTS metrics_history_old`).run();
-    debug('[Cleanup] 已删除旧的 metrics_history_old 表');
+    debug('[Cleanup] 已刪除舊的 metrics_history_old 表');
     
-    // 2. 将 metrics_history 重命名为 metrics_history_old
+    // 2. 將 metrics_history 重新命名為 metrics_history_old
     const currentTable = await db.prepare(
       `SELECT name FROM sqlite_master WHERE type='table' AND name='metrics_history'`
     ).first();
     
     if (currentTable) {
       await db.prepare(`ALTER TABLE metrics_history RENAME TO metrics_history_old`).run();
-      debug('[Cleanup] 已将 metrics_history 重命名为 metrics_history_old');
+      debug('[Cleanup] 已將 metrics_history 重新命名為 metrics_history_old');
     }
     
-    // 3. 重新初始化数据库以创建新的 metrics_history 表
+    // 3. 重新初始化資料庫以建立新的 metrics_history 表
     dbInitialized = false;
     await initDatabase(db);
 
-    debug('[Cleanup] 已创建新的 metrics_history 表');
+    debug('[Cleanup] 已建立新的 metrics_history 表');
     
     return {
       success: true,
-      message: '表轮换成功'
+      message: '表輪換成功'
     };
   } catch (e) {
-    console.error('[Cleanup] 表轮换失败:', e);
+    console.error('[Cleanup] 表輪換失敗:', e);
     return { success: false, error: e.message };
   }
 }
@@ -389,13 +389,13 @@ export async function saveMetricsHistory(db, serverId, metrics, regionCode = '')
       parseFloat(metrics.net_tx_monthly) || 0
     ).run();
   } catch (e) {
-    // 检测是否是 "has no column" 错误，如果是则添加缺失字段
+    // 檢測是否是 "has no column" 錯誤，如果是則新增缺失欄位
     if (e.message && /has no column/i.test(e.message)) {
-      console.warn('检测到数据库字段缺失，尝试添加缺失字段...');
+      console.warn('檢測到資料庫欄位缺失，嘗試新增缺失欄位...');
       await addHistoryColumns(db);
       return;
     }
-    console.error('保存历史数据失败:', e);
+    console.error('儲存歷史資料失敗:', e);
   }
 }
 
@@ -410,7 +410,7 @@ export async function getLatestMetrics(db, serverId) {
     
     return result || null;
   } catch (e) {
-    console.error('获取最新指标数据失败:', e);
+    console.error('獲取最新指標資料失敗:', e);
     return null;
   }
 }
@@ -435,7 +435,7 @@ export async function getLatestMetricsForAllServers(db) {
     setLatestMetricsCache(result);
     return result;
   } catch (e) {
-    console.error('获取所有服务器最新指标数据失败:', e);
+    console.error('獲取所有伺服器最新指標資料失敗:', e);
     const cacheInfo = getLatestMetricsCache();
     return cacheInfo.cache || new Map();
   }

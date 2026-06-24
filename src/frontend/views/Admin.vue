@@ -1141,7 +1141,7 @@ const loadSettings = async () => {
         cloudflare_token: settingsData.cloudflare_token || '',
         jwt_secret: settingsData.jwt_secret || '',
         username: settingsData.username || '',
-        password: '',  // 不显示加密后的密码
+        password: '',  // 不顯示加密後的密碼
         custom_ct: settingsData.custom_ct || '',
         custom_cu: settingsData.custom_cu || '',
         custom_cm: settingsData.custom_cm || '',
@@ -1173,7 +1173,7 @@ const saveSettings = async () => {
       return
     }
 
-    // 只有当用户输入了新密码时才验证密码确认
+    // 只有當用戶輸入了新密碼時才驗證密碼確認
     if (settings.value.password && settings.value.password.length > 0) {
       if (settings.value.password !== settings.value.confirm_password) {
         validationError.value = trans.value.passwordMismatch
@@ -1181,7 +1181,7 @@ const saveSettings = async () => {
       }
     }
 
-    // 如果 turnstile_enabled 开启，验证 turnstile_site_key 和 turnstile_secret_key 都不为空
+    // 如果 turnstile_enabled 開啟，驗證 turnstile_site_key 和 turnstile_secret_key 都不為空
     if (settings.value.turnstile_enabled) {
       if (!settings.value.turnstile_site_key || settings.value.turnstile_site_key.trim().length === 0) {
         validationError.value = trans.value.turnstileSiteKeyRequired
@@ -1193,7 +1193,7 @@ const saveSettings = async () => {
       }
     }
 
-    // 如果 tg_notify 或 expire_reminder 开启，验证 tg_bot_token 不为空
+    // 如果 tg_notify 或 expire_reminder 開啟，驗證 tg_bot_token 不為空
     if (settings.value.tg_notify === 'true' || settings.value.expire_reminder === 'true') {
       if (!settings.value.tg_bot_token || settings.value.tg_bot_token.trim().length === 0) {
         validationError.value = trans.value.tgBotTokenRequired
@@ -1234,7 +1234,7 @@ const saveSettings = async () => {
       }
     }
 
-    // 只有当用户输入了新密码时才保存密码
+    // 只有當用戶輸入了新密碼時才儲存密碼
     if (settings.value.password && settings.value.password.length > 0) {
       data.settings.password = settings.value.password
     }

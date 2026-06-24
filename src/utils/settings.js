@@ -45,10 +45,10 @@ let siteSettingsCacheExpiry = 0;
 export async function loadSiteSettings(db) {
   const now = Date.now();
   if (cachedSiteSettings && now < siteSettingsCacheExpiry) {
-    debug('读取site settings缓存');
+    debug('讀取site settings快取');
     return cachedSiteSettings;
   }
-  debug('从数据库加载site settings');
+  debug('從資料庫載入site settings');
 
   const result = { ...defaults };
   let hasSite = false;
@@ -80,7 +80,7 @@ export async function loadSiteSettings(db) {
       }
     }
   } catch (e) {
-    console.error('加载站点设置失败:', e);
+    console.error('載入站點設定失敗:', e);
   }
 
   cachedSiteSettings = result;
@@ -143,7 +143,7 @@ export async function loadSettings(db) {
       }
     }
   } catch (e) {
-    console.error('加载设置失败:', e);
+    console.error('載入設定失敗:', e);
   }
 
   return result;

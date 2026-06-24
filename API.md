@@ -1,155 +1,155 @@
-# CF-Server-Monitor 后端 API 文档
+# CF-Server-Monitor 後端 API 文件
 
-> 面向 CF-Server-Monitor 后端（Cloudflare Workers + D1 + Durable Objects）的完整 REST / WebSocket API 参考。
-> 本文档覆盖所有公开端点、内部端点、鉴权机制、错误码、数据结构与 WebSocket 实时推送协议。
+> 面向 CF-Server-Monitor 後端（Cloudflare Workers + D1 + Durable Objects）的完整 REST / WebSocket API 參考。
+> 本文件覆蓋所有公開端點、內部端點、鑑權機制、錯誤碼、資料結構與 WebSocket 即時推送協議。
 >
-> **Base URL**：`https://<your-worker-domain>`（部署后由 Cloudflare Workers 提供）
+> **Base URL**：`https://<your-worker-domain>`（部署後由 Cloudflare Workers 提供）
 >
-> **统一响应头**：
+> **統一響應頭**：
 >
-> - `Content-Type: application/json; charset=utf-8`（除特别说明外）
-> - CORS：当 `CORS_ALLOWED_ORIGINS` 环境变量配置了允许的源时，会附带 `Access-Control-Allow-Origin / Allow-Credentials / Vary: Origin`。
-> - `X-Cache: HIT | MISS`：仅出现在 `/api/history/all` 响应中。
+> - `Content-Type: application/json; charset=utf-8`（除特別說明外）
+> - CORS：當 `CORS_ALLOWED_ORIGINS` 環境變數配置了允許的源時，會附帶 `Access-Control-Allow-Origin / Allow-Credentials / Vary: Origin`。
+> - `X-Cache: HIT | MISS`：僅出現在 `/api/history/all` 響應中。
 
 ***
 
-## 目录
+## 目錄
 
-- [0. 通用规范](#0-通用规范)
-  - [0.1 鉴权机制](#01-鉴权机制)
-  - [0.2 Turnstile 人机验证](#02-turnstile-人机验证)
-  - [0.3 统一响应格式](#03-统一响应格式)
-  - [0.4 统一错误码](#04-统一错误码)
-  - [0.5 限流与配额](#05-限流与配额)
+- [0. 通用規範](#0-通用規範)
+  - [0.1 鑑權機制](#01-鑑權機制)
+  - [0.2 Turnstile 人機驗證](#02-turnstile-人機驗證)
+  - [0.3 統一響應格式](#03-統一響應格式)
+  - [0.4 統一錯誤碼](#04-統一錯誤碼)
+  - [0.5 限流與配額](#05-限流與配額)
   - [0.6 CORS](#06-cors)
-- [1. 探针上报接口](#1-探针上报接口)
-  - [1.1](#11-post-update---指标上报agent-入口) [`POST /update`](#11-post-update---指标上报agent-入口) [- 指标上报（Agent 入口）](#11-post-update---指标上报agent-入口)
-- [2. 公开 API（前端/管理端共用）](#2-公开-api前端管理端共用)
-  - [2.1](#21-get-apiconfig---获取站点配置) [`GET /api/config`](#21-get-apiconfig---获取站点配置) [- 获取站点配置](#21-get-apiconfig---获取站点配置)
-  - [2.2](#22-get-apiservers---获取服务器列表首页) [`GET /api/servers`](#22-get-apiservers---获取服务器列表首页) [- 获取服务器列表（首页）](#22-get-apiservers---获取服务器列表首页)
-  - [2.3](#23-get-apiserver---获取单台服务器详情) [`GET /api/server`](#23-get-apiserver---获取单台服务器详情) [- 获取单台服务器详情](#23-get-apiserver---获取单台服务器详情)
-  - [2.4](#24-get-apihistoryall---获取历史指标) [`GET /api/history/all`](#24-get-apihistoryall---获取历史指标) [- 获取历史指标](#24-get-apihistoryall---获取历史指标)
-  - [2.5](#25-get-apiws---websocket-实时推送) [`GET /api/ws`](#25-get-apiws---websocket-实时推送) [- WebSocket 实时推送](#25-get-apiws---websocket-实时推送)
-- [3. 管理端 API（鉴权）](#3-管理端-api鉴权)
+- [1. 探針上報介面](#1-探針上報介面)
+  - [1.1](#11-post-update---指標上報agent-入口) [`POST /update`](#11-post-update---指標上報agent-入口) [- 指標上報（Agent 入口）](#11-post-update---指標上報agent-入口)
+- [2. 公開 API（前端/管理端共用）](#2-公開-api前端管理端共用)
+  - [2.1](#21-get-apiconfig---獲取站點配置) [`GET /api/config`](#21-get-apiconfig---獲取站點配置) [- 獲取站點配置](#21-get-apiconfig---獲取站點配置)
+  - [2.2](#22-get-apiservers---獲取伺服器列表首頁) [`GET /api/servers`](#22-get-apiservers---獲取伺服器列表首頁) [- 獲取伺服器列表（首頁）](#22-get-apiservers---獲取伺服器列表首頁)
+  - [2.3](#23-get-apiserver---獲取單臺伺服器詳情) [`GET /api/server`](#23-get-apiserver---獲取單臺伺服器詳情) [- 獲取單臺伺服器詳情](#23-get-apiserver---獲取單臺伺服器詳情)
+  - [2.4](#24-get-apihistoryall---獲取歷史指標) [`GET /api/history/all`](#24-get-apihistoryall---獲取歷史指標) [- 獲取歷史指標](#24-get-apihistoryall---獲取歷史指標)
+  - [2.5](#25-get-apiws---websocket-即時推送) [`GET /api/ws`](#25-get-apiws---websocket-即時推送) [- WebSocket 即時推送](#25-get-apiws---websocket-即時推送)
+- [3. 管理端 API（鑑權）](#3-管理端-api鑑權)
   - [3.1](#31-post-adminapi---管理操作入口) [`POST /admin/api`](#31-post-adminapi---管理操作入口) [- 管理操作入口](#31-post-adminapi---管理操作入口)
-  - [3.2](#32-action-login---登录) [`action: login`](#32-action-login---登录) [- 登录](#32-action-login---登录)
-  - [3.3](#33-action-get_settings---读取全部设置) [`action: get_settings`](#33-action-get_settings---读取全部设置) [- 读取全部设置](#33-action-get_settings---读取全部设置)
-  - [3.4](#34-action-list---列出全部服务器含在线统计) [`action: list`](#34-action-list---列出全部服务器含在线统计) [- 列出全部服务器（含在线/统计）](#34-action-list---列出全部服务器含在线统计)
+  - [3.2](#32-action-login---登入) [`action: login`](#32-action-login---登入) [- 登入](#32-action-login---登入)
+  - [3.3](#33-action-get_settings---讀取全部設定) [`action: get_settings`](#33-action-get_settings---讀取全部設定) [- 讀取全部設定](#33-action-get_settings---讀取全部設定)
+  - [3.4](#34-action-list---列出全部伺服器含線上統計) [`action: list`](#34-action-list---列出全部伺服器含線上統計) [- 列出全部伺服器（含線上/統計）](#34-action-list---列出全部伺服器含線上統計)
   - [3.5](#35-action-d1_usage---d1--workers-用量) [`action: d1_usage`](#35-action-d1_usage---d1--workers-用量) [- D1 / Workers 用量](#35-action-d1_usage---d1--workers-用量)
-  - [3.6](#36-action-save_settings---保存设置) [`action: save_settings`](#36-action-save_settings---保存设置) [- 保存设置](#36-action-save_settings---保存设置)
-  - [3.7](#37-action-add---新增服务器) [`action: add`](#37-action-add---新增服务器) [- 新增服务器](#37-action-add---新增服务器)
-  - [3.8](#38-action-edit---修改服务器信息) [`action: edit`](#38-action-edit---修改服务器信息) [- 修改服务器信息](#38-action-edit---修改服务器信息)
-  - [3.9](#39-action-delete---删除服务器) [`action: delete`](#39-action-delete---删除服务器) [- 删除服务器](#39-action-delete---删除服务器)
-  - [3.10](#310-action-batch_delete---批量删除) [`action: batch_delete`](#310-action-batch_delete---批量删除) [- 批量删除](#310-action-batch_delete---批量删除)
-  - [3.11](#311-action-save_order---保存服务器排序) [`action: save_order`](#311-action-save_order---保存服务器排序) [- 保存服务器排序](#311-action-save_order---保存服务器排序)
-- [4. 系统维护端点](#4-系统维护端点)
-  - [4.1](#41-post-updatedatabase---数据库迁移) [`POST /updateDatabase`](#41-post-updatedatabase---数据库迁移) [- 数据库迁移](#41-post-updatedatabase---数据库迁移)
-  - [4.2](#42-post-rebuild---数据库重建) [`POST /rebuild`](#42-post-rebuild---数据库重建) [- 数据库重建](#42-post-rebuild---数据库重建)
-  - [4.3](#43-get-__dohealth---durable-object-健康检查) [`GET /__do/health`](#43-get-__dohealth---durable-object-健康检查) [- Durable Object 健康检查](#43-get-__dohealth---durable-object-健康检查)
-- [5. 数据结构](#5-数据结构)
-  - [5.1 Server 对象](#51-server-对象)
-  - [5.2 Metrics 对象（探针上报 payload）](#52-metrics-对象探针上报-payload)
-  - [5.3 History Row 对象](#53-history-row-对象)
-  - [5.4 Settings 对象](#54-settings-对象)
-  - [5.5 WebSocket 消息](#55-websocket-消息)
-- [6. 定时任务 (Cron)](#6-定时任务-cron)
-- [7. 错误码速查表](#7-错误码速查表)
+  - [3.6](#36-action-save_settings---儲存設定) [`action: save_settings`](#36-action-save_settings---儲存設定) [- 儲存設定](#36-action-save_settings---儲存設定)
+  - [3.7](#37-action-add---新增伺服器) [`action: add`](#37-action-add---新增伺服器) [- 新增伺服器](#37-action-add---新增伺服器)
+  - [3.8](#38-action-edit---修改伺服器資訊) [`action: edit`](#38-action-edit---修改伺服器資訊) [- 修改伺服器資訊](#38-action-edit---修改伺服器資訊)
+  - [3.9](#39-action-delete---刪除伺服器) [`action: delete`](#39-action-delete---刪除伺服器) [- 刪除伺服器](#39-action-delete---刪除伺服器)
+  - [3.10](#310-action-batch_delete---批次刪除) [`action: batch_delete`](#310-action-batch_delete---批次刪除) [- 批次刪除](#310-action-batch_delete---批次刪除)
+  - [3.11](#311-action-save_order---儲存伺服器排序) [`action: save_order`](#311-action-save_order---儲存伺服器排序) [- 儲存伺服器排序](#311-action-save_order---儲存伺服器排序)
+- [4. 系統維護端點](#4-系統維護端點)
+  - [4.1](#41-post-updatedatabase---資料庫遷移) [`POST /updateDatabase`](#41-post-updatedatabase---資料庫遷移) [- 資料庫遷移](#41-post-updatedatabase---資料庫遷移)
+  - [4.2](#42-post-rebuild---資料庫重建) [`POST /rebuild`](#42-post-rebuild---資料庫重建) [- 資料庫重建](#42-post-rebuild---資料庫重建)
+  - [4.3](#43-get-__dohealth---durable-object-健康檢查) [`GET /__do/health`](#43-get-__dohealth---durable-object-健康檢查) [- Durable Object 健康檢查](#43-get-__dohealth---durable-object-健康檢查)
+- [5. 資料結構](#5-資料結構)
+  - [5.1 Server 物件](#51-server-物件)
+  - [5.2 Metrics 物件（探針上報 payload）](#52-metrics-物件探針上報-payload)
+  - [5.3 History Row 物件](#53-history-row-物件)
+  - [5.4 Settings 物件](#54-settings-物件)
+  - [5.5 WebSocket 訊息](#55-websocket-訊息)
+- [6. 定時任務 (Cron)](#6-定時任務-cron)
+- [7. 錯誤碼速查表](#7-錯誤碼速查表)
 - [8. 完整 cURL 示例](#8-完整-curl-示例)
-- [9. 版本与变更说明](#9-版本与变更说明)
+- [9. 版本與變更說明](#9-版本與變更說明)
 
 ***
 
-## 0. 通用规范
+## 0. 通用規範
 
-### 0.1 鉴权机制
+### 0.1 鑑權機制
 
-项目使用 **三套并行的鉴权机制**，按接口范围区分使用。
+專案使用 **三套並行的鑑權機制**，按介面範圍區分使用。
 
-#### A. 探针 Secret（Agent → Worker）
+#### A. 探針 Secret（Agent → Worker）
 
 - **使用位置**：`POST /update`
-- **方式**：请求体字段 `secret`
-- **值**：必须等于 Worker 环境变量 `API_SECRET`
-- **失败返回**：`401 { "error": "Invalid secret", "code": 401 }`
+- **方式**：請求體欄位 `secret`
+- **值**：必須等於 Worker 環境變數 `API_SECRET`
+- **失敗返回**：`401 { "error": "Invalid secret", "code": 401 }`
 
-#### B. Basic Auth（管理登录 → JWT）
+#### B. Basic Auth（管理登入 → JWT）
 
 - **使用位置**：`POST /admin/api` 的 `action: login`
-- **方式**：请求体字段 `username` / `password`（后端内部组装 `Basic base64(user:pass)` 进行校验）
-- **校验顺序**：
-  1. 若 `site_options.password` 已设置 → 与其 MD5 比对
-  2. 否则 → 与 `API_SECRET` 直接比对
-  3. 用户名：若 `site_options.username` 已设置则用之，否则使用 `API_USER_NAME` 环境变量，最终回退为 `admin`
-- **失败返回**：`401 { "error": "Invalid username or password", "code": 401 }`
+- **方式**：請求體欄位 `username` / `password`（後端內部組裝 `Basic base64(user:pass)` 進行校驗）
+- **校驗順序**：
+  1. 若 `site_options.password` 已設定 → 與其 MD5 比對
+  2. 否則 → 與 `API_SECRET` 直接比對
+  3. 使用者名稱：若 `site_options.username` 已設定則用之，否則使用 `API_USER_NAME` 環境變數，最終回退為 `admin`
+- **失敗返回**：`401 { "error": "Invalid username or password", "code": 401 }`
 
-#### C. JWT Bearer（管理操作 → 后续管理请求）
+#### C. JWT Bearer（管理操作 → 後續管理請求）
 
 - **使用位置**：所有非 `login` 的 `POST /admin/api`、`POST /updateDatabase`、`POST /rebuild`
 - **方式**：`Authorization: Bearer <token>` Header
-- **Token 签发**：`HS256` JWT，默认有效期 **604800 秒（7 天）**
-- **签名密钥**（优先级）：
-  1. `site_options.jwt_secret`（长度 ≥ 32）
-  2. `API_SECRET`（不够 32 字符时 `padEnd` 补 `'x'` 后取前 64 位）
+- **Token 簽發**：`HS256` JWT，預設有效期 **604800 秒（7 天）**
+- **簽名金鑰**（優先順序）：
+  1. `site_options.jwt_secret`（長度 ≥ 32）
+  2. `API_SECRET`（不夠 32 字元時 `padEnd` 補 `'x'` 後取前 64 位）
   3. 回退常量：`'default_jwt_secret_for_server_monitor'`
-- **Payload 字段**：
+- **Payload 欄位**：
   ```json
   { "sub": "admin", "iat": <unix>, "exp": <unix + 604800> }
   ```
-- **失败返回**：`401 { "error": "Unauthorized", "code": 401 }`
+- **失敗返回**：`401 { "error": "Unauthorized", "code": 401 }`
 
-> **缓存提示**：管理端登录成功后，前端应将 `token` 存于 `localStorage`，并对所有非登录的 `admin/api` 请求自动加上 `Authorization: Bearer <token>` Header。
+> **快取提示**：管理端登入成功後，前端應將 `token` 存於 `localStorage`，並對所有非登入的 `admin/api` 請求自動加上 `Authorization: Bearer <token>` Header。
 
-### 0.2 Turnstile 人机验证
+### 0.2 Turnstile 人機驗證
 
-当 `site_options.turnstile_enabled === 'true'` 时，**所有** **`/api/*`** **与** **`/admin/api`** **公共接口**（除了下方 bypass 列表）都需要先验证 Cloudflare Turnstile Token。
+當 `site_options.turnstile_enabled === 'true'` 時，**所有** **`/api/*`** **與** **`/admin/api`** **公共介面**（除了下方 bypass 列表）都需要先驗證 Cloudflare Turnstile Token。
 
-**Bypass 列表**（无需 Turnstile）：
+**Bypass 列表**（無需 Turnstile）：
 
-- `/admin/api`（`/admin/api` 走另一套 Turnstile：见 `action: login`）
-- `/api/ws`（WebSocket 升级）
-- `/api/config` 在 **不携带** `X-Turnstile-Token` 与 `X-Turnstile-Verified` 时（用于初始化判断是否需要验证）
+- `/admin/api`（`/admin/api` 走另一套 Turnstile：見 `action: login`）
+- `/api/ws`（WebSocket 升級）
+- `/api/config` 在 **不攜帶** `X-Turnstile-Token` 與 `X-Turnstile-Verified` 時（用於初始化判斷是否需要驗證）
 
-**验证流程**：
+**驗證流程**：
 
-1. **首次访问**：客户端从 `/api/config` 拿到 `turnstile_site_key`。
-2. **前端渲染** Turnstile 组件 → 拿到一次性 `token`。
-3. **后续请求**在 Header 增加：
+1. **首次訪問**：客戶端從 `/api/config` 拿到 `turnstile_site_key`。
+2. **前端渲染** Turnstile 元件 → 拿到一次性 `token`。
+3. **後續請求**在 Header 增加：
    ```
    X-Turnstile-Token: <token from cloudflare>
    ```
-4. Worker 用 `site_options.turnstile_secret_key` 调用 `https://challenges.cloudflare.com/turnstile/v0/siteverify` 验证。
-5. **验证成功后**，Worker 通过 `X-Turnstile-Verified` 这个 **加密 Header** 给客户端发"已验证凭证"（AES-GCM 加密、`API_SECRET`/`TURNSTILE_SECRET_KEY` 派生密钥、有效期 **3600 秒**），后续可省略 `X-Turnstile-Token`。
-6. 客户端也可以把 `X-Turnstile-Verified` 再次带回，Worker 会优先验证该 Header（验证有效期）。
+4. Worker 用 `site_options.turnstile_secret_key` 呼叫 `https://challenges.cloudflare.com/turnstile/v0/siteverify` 驗證。
+5. **驗證成功後**，Worker 通過 `X-Turnstile-Verified` 這個 **加密 Header** 給客戶端發"已驗證憑證"（AES-GCM 加密、`API_SECRET`/`TURNSTILE_SECRET_KEY` 派生金鑰、有效期 **3600 秒**），後續可省略 `X-Turnstile-Token`。
+6. 客戶端也可以把 `X-Turnstile-Verified` 再次帶回，Worker 會優先驗證該 Header（驗證有效期）。
 
-**相关请求/响应 Header**：
+**相關請求/響應 Header**：
 
-| Header                 | 方向              | 含义                                                                                 |
+| Header                 | 方向              | 含義                                                                                 |
 | ---------------------- | --------------- | ---------------------------------------------------------------------------------- |
-| `X-Turnstile-Token`    | Client → Server | 当次 Turnstile token（明文）                                                             |
-| `X-Turnstile-Verified` | 双向              | AES-GCM 加密的 `{ expires: <unix+3600>, verified: true, timestamp: <ms> }`，base64 字符串 |
+| `X-Turnstile-Token`    | Client → Server | 當次 Turnstile token（明文）                                                             |
+| `X-Turnstile-Verified` | 雙向              | AES-GCM 加密的 `{ expires: <unix+3600>, verified: true, timestamp: <ms> }`，base64 字串 |
 
-**失败返回**：`403 { "error": "Turnstile verification failed", "code": 403 }`
+**失敗返回**：`403 { "error": "Turnstile verification failed", "code": 403 }`
 
-### 0.3 统一响应格式
+### 0.3 統一響應格式
 
-**成功响应**：
+**成功響應**：
 
 ```json
 {
-  // 业务字段，结构因接口而异
+  // 業務欄位，結構因介面而異
   "success": true,
   ...
 }
 ```
 
-> 注：项目里"成功响应"是直接 `JSON.stringify` 业务对象，**没有固定的** **`code`** **字段**。HTTP 状态码始终为 `200`。
+> 注：專案裡"成功響應"是直接 `JSON.stringify` 業務物件，**沒有固定的** **`code`** **欄位**。HTTP 狀態碼始終為 `200`。
 
-**成功响应特例**：
+**成功響應特例**：
 
-- `POST /update` → 纯文本 `OK`（`Content-Type: text/plain`）
-- WebSocket 升级 → `101 Switching Protocols`
+- `POST /update` → 純文本 `OK`（`Content-Type: text/plain`）
+- WebSocket 升級 → `101 Switching Protocols`
 
-**错误响应**：
+**錯誤響應**：
 
 ```json
 {
@@ -158,46 +158,46 @@
 }
 ```
 
-> `code` 字段是 HTTP 状态码的镜像，便于前端无需读取 status 即可分流。
+> `code` 欄位是 HTTP 狀態碼的映象，便於前端無需讀取 status 即可分流。
 
-### 0.4 统一错误码
+### 0.4 統一錯誤碼
 
-| code | 含义                    | 常见场景                                               |
+| code | 含義                    | 常見場景                                               |
 | ---- | --------------------- | -------------------------------------------------- |
-| 400  | Bad Request           | 参数缺失/类型错/UUID 不合法/未知 action                        |
-| 401  | Unauthorized          | 缺/错 token、账号密码错、站点非公开且未登录                          |
-| 403  | Forbidden             | Turnstile 验证失败                                     |
-| 404  | Not Found             | 服务器 ID 不存在                                         |
-| 409  | Conflict              | `DATABASE_UPGRADE_REQUIRED`，需先调用 `/updateDatabase` |
-| 500  | Internal Server Error | DB 异常等未捕获错误                                        |
-| 503  | Service Unavailable   | WebSocket 不可用（未绑定 DO）                              |
+| 400  | Bad Request           | 引數缺失/型別錯/UUID 不合法/未知 action                        |
+| 401  | Unauthorized          | 缺/錯 token、賬號密碼錯、站點非公開且未登入                          |
+| 403  | Forbidden             | Turnstile 驗證失敗                                     |
+| 404  | Not Found             | 伺服器 ID 不存在                                         |
+| 409  | Conflict              | `DATABASE_UPGRADE_REQUIRED`，需先呼叫 `/updateDatabase` |
+| 500  | Internal Server Error | DB 異常等未捕獲錯誤                                        |
+| 503  | Service Unavailable   | WebSocket 不可用（未繫結 DO）                              |
 
-### 0.5 限流与配额
+### 0.5 限流與配額
 
-- Cloudflare Workers / D1 的硬性限额由 Cloudflare 平台强制（**D1：500 万行读 / 10 万行写 / 日；Workers：10 万次请求 / 日**）。
-- `/admin/api?action=d1_usage` 可查询当前账户当日用量与近 24h 用量。
+- Cloudflare Workers / D1 的硬性限額由 Cloudflare 平臺強制（**D1：500 萬行讀 / 10 萬行寫 / 日；Workers：10 萬次請求 / 日**）。
+- `/admin/api?action=d1_usage` 可查詢當前賬戶當日用量與近 24h 用量。
 
 ### 0.6 CORS
 
-环境变量 `CORS_ALLOWED_ORIGINS`，**逗号分隔**的源白名单，例如：
+環境變數 `CORS_ALLOWED_ORIGINS`，**逗號分隔**的源白名單，例如：
 
 ```
 CORS_ALLOWED_ORIGINS=https://status.example.com,https://admin.example.com
 ```
 
-- 当请求 `Origin` 命中白名单 → 响应带 `Access-Control-Allow-Origin: <origin>`、`Access-Control-Allow-Credentials: true`、`Vary: Origin`。
-- 预检请求 `OPTIONS` → 直接返回 `204`，并回显 `Access-Control-Request-Method` / `Access-Control-Request-Headers`，缓存 86400 秒。
-- 未配置或未命中 → 不会下发 CORS Header，浏览器侧会被同源策略拦截。
+- 當請求 `Origin` 命中白名單 → 響應帶 `Access-Control-Allow-Origin: <origin>`、`Access-Control-Allow-Credentials: true`、`Vary: Origin`。
+- 預檢請求 `OPTIONS` → 直接返回 `204`，並回顯 `Access-Control-Request-Method` / `Access-Control-Request-Headers`，快取 86400 秒。
+- 未配置或未命中 → 不會下發 CORS Header，瀏覽器側會被同源策略攔截。
 
 ***
 
-## 1. 探针上报接口
+## 1. 探針上報介面
 
-### 1.1 `POST /update` - 指标上报（Agent 入口）
+### 1.1 `POST /update` - 指標上報（Agent 入口）
 
-> **调用方**：服务器侧探针（[Bash install.sh](../public/install.sh) / [Windows cf-server-monitor.pyw](../public/cf-server-monitor.pyw)）。
-> **鉴权**：`secret` 字段 == `env.API_SECRET`
-> **Turnstile**：不参与
+> **呼叫方**：伺服器側探針（[Bash install.sh](../public/install.sh) / [Windows cf-server-monitor.pyw](../public/cf-server-monitor.pyw)）。
+> **鑑權**：`secret` 欄位 == `env.API_SECRET`
+> **Turnstile**：不參與
 
 **Request**
 
@@ -251,44 +251,44 @@ CORS_ALLOWED_ORIGINS=https://status.example.com,https://admin.example.com
   }
   ```
 
-**字段说明（metrics）**：
+**欄位說明（metrics）**：
 
-| 字段               | 类型           | 单位  | 必填 | 说明                                          |
+| 欄位               | 型別           | 單位  | 必填 | 說明                                          |
 | ---------------- | ------------ | --- | -- | ------------------------------------------- |
-| `cpu`            | string       | %   | 是  | CPU 占用率，保留 2 位小数                            |
-| `ram_total`      | string       | MB  | 是  | 内存总容量                                       |
-| `ram_used`       | string       | MB  | 是  | 内存已用                                        |
-| `swap_total`     | string       | MB  | 是  | Swap 总容量                                    |
+| `cpu`            | string       | %   | 是  | CPU 佔用率，保留 2 位小數                            |
+| `ram_total`      | string       | MB  | 是  | 記憶體總容量                                       |
+| `ram_used`       | string       | MB  | 是  | 記憶體已用                                        |
+| `swap_total`     | string       | MB  | 是  | Swap 總容量                                    |
 | `swap_used`      | string       | MB  | 是  | Swap 已用                                     |
-| `disk_total`     | string       | MB  | 是  | 磁盘总容量                                       |
-| `disk_used`      | string       | MB  | 是  | 磁盘已用                                        |
-| `load_avg`       | string       | -   | 是  | 三个浮点，空格分隔                                   |
-| `boot_time`      | string       | 毫秒  | 是  | 系统启动时间（Unix ms）                             |
-| `net_rx`         | string       | 字节  | 是  | 累计接收字节                                      |
-| `net_tx`         | string       | 字节  | 是  | 累计发送字节                                      |
-| `net_rx_monthly` | string       | 字节  | 是  | 当月累计下行                                      |
-| `net_tx_monthly` | string       | 字节  | 是  | 当月累计上行                                      |
-| `net_in_speed`   | string       | B/s | 是  | 实时下行速度                                      |
-| `net_out_speed`  | string       | B/s | 是  | 实时上行速度                                      |
-| `os`             | string       | -   | 是  | 操作系统                                        |
-| `arch`           | string       | -   | 是  | 系统架构                                        |
-| `cpu_info`       | string       | -   | 是  | CPU 型号                                      |
-| `cpu_cores`      | string       | -   | 是  | 逻辑核心数                                       |
-| `gpu`            | number\|null | %   | 否  | GPU 占用（Linux 探针可从 nvidia-smi / rocm-smi 读取） |
-| `gpu_info`       | string\|null | -   | 否  | GPU 型号                                      |
-| `processes`      | string       | -   | 是  | 进程数                                         |
-| `tcp_conn`       | string       | -   | 是  | TCP 活跃连接数                                   |
-| `udp_conn`       | string       | -   | 是  | UDP 套接字数                                    |
-| `ip_v4`          | string       | -   | 是  | `1`/`0`，IPv4 可达性                            |
-| `ip_v6`          | string       | -   | 是  | `1`/`0`，IPv6 可达性                            |
-| `ping_ct`        | string       | ms  | 否  | 电信节点延时，**空字符串表示未取到**                        |
-| `ping_cu`        | string       | ms  | 否  | 联通节点延时                                      |
-| `ping_cm`        | string       | ms  | 否  | 移动节点延时                                      |
-| `ping_bd`        | string       | ms  | 否  | BGP 节点延时                                    |
-| `loss_ct`        | string       | %   | 否  | 电信丢包率                                       |
-| `loss_cu`        | string       | %   | 否  | 联通丢包率                                       |
-| `loss_cm`        | string       | %   | 否  | 移动丢包率                                       |
-| `loss_bd`        | string       | %   | 否  | BGP 丢包率                                     |
+| `disk_total`     | string       | MB  | 是  | 磁碟總容量                                       |
+| `disk_used`      | string       | MB  | 是  | 磁碟已用                                        |
+| `load_avg`       | string       | -   | 是  | 三個浮點，空格分隔                                   |
+| `boot_time`      | string       | 毫秒  | 是  | 系統啟動時間（Unix ms）                             |
+| `net_rx`         | string       | 位元組  | 是  | 累計接收位元組                                      |
+| `net_tx`         | string       | 位元組  | 是  | 累計傳送位元組                                      |
+| `net_rx_monthly` | string       | 位元組  | 是  | 當月累計下行                                      |
+| `net_tx_monthly` | string       | 位元組  | 是  | 當月累計上行                                      |
+| `net_in_speed`   | string       | B/s | 是  | 即時下行速度                                      |
+| `net_out_speed`  | string       | B/s | 是  | 即時上行速度                                      |
+| `os`             | string       | -   | 是  | 作業系統                                        |
+| `arch`           | string       | -   | 是  | 系統架構                                        |
+| `cpu_info`       | string       | -   | 是  | CPU 型號                                      |
+| `cpu_cores`      | string       | -   | 是  | 邏輯核心數                                       |
+| `gpu`            | number\|null | %   | 否  | GPU 佔用（Linux 探針可從 nvidia-smi / rocm-smi 讀取） |
+| `gpu_info`       | string\|null | -   | 否  | GPU 型號                                      |
+| `processes`      | string       | -   | 是  | 程序數                                         |
+| `tcp_conn`       | string       | -   | 是  | TCP 活躍連線數                                   |
+| `udp_conn`       | string       | -   | 是  | UDP 套接字數                                    |
+| `ip_v4`          | string       | -   | 是  | `1`/`0`，IPv4 可達性                            |
+| `ip_v6`          | string       | -   | 是  | `1`/`0`，IPv6 可達性                            |
+| `ping_ct`        | string       | ms  | 否  | 電信節點延時，**空字串表示未取到**                        |
+| `ping_cu`        | string       | ms  | 否  | 聯通節點延時                                      |
+| `ping_cm`        | string       | ms  | 否  | 移動節點延時                                      |
+| `ping_bd`        | string       | ms  | 否  | BGP 節點延時                                    |
+| `loss_ct`        | string       | %   | 否  | 電信丟包率                                       |
+| `loss_cu`        | string       | %   | 否  | 聯通丟包率                                       |
+| `loss_cm`        | string       | %   | 否  | 移動丟包率                                       |
+| `loss_bd`        | string       | %   | 否  | BGP 丟包率                                     |
 
 **Response**
 
@@ -297,7 +297,7 @@ CORS_ALLOWED_ORIGINS=https://status.example.com,https://admin.example.com
   OK
   ```
   （`Content-Type: text/plain`）
-- 失败：
+- 失敗：
   ```json
   { "error": "Invalid secret", "code": 401 }
   { "error": "Server not found", "code": 404 }
@@ -306,25 +306,25 @@ CORS_ALLOWED_ORIGINS=https://status.example.com,https://admin.example.com
 **副作用**
 
 1. 插入一行到 `metrics_history`。
-2. 触发 Durable Object `MetricsBroadcaster` 内部广播，WebSocket 订阅者将立即收到 `{type:"update", serverId, ts, data}` 消息。
-3. 写入 `request.cf.country`（或 `cf-ipcountry` Header）作为该条记录的 `region` 字段（统一转大写）。
+2. 觸發 Durable Object `MetricsBroadcaster` 內部廣播，WebSocket 訂閱者將立即收到 `{type:"update", serverId, ts, data}` 訊息。
+3. 寫入 `request.cf.country`（或 `cf-ipcountry` Header）作為該條記錄的 `region` 欄位（統一轉大寫）。
 
 ***
 
-## 2. 公开 API（前端/管理端共用）
+## 2. 公開 API（前端/管理端共用）
 
-> 以下接口除 `/api/ws` 外，若 `site_options.is_public !== 'true'` 则**必须**携带 JWT（`Authorization: Bearer <token>`）才能访问。
-> 命中 Turnstile 时需带 `X-Turnstile-Token` 或 `X-Turnstile-Verified`。
+> 以下介面除 `/api/ws` 外，若 `site_options.is_public !== 'true'` 則**必須**攜帶 JWT（`Authorization: Bearer <token>`）才能訪問。
+> 命中 Turnstile 時需帶 `X-Turnstile-Token` 或 `X-Turnstile-Verified`。
 
-### 2.1 `GET /api/config` - 获取站点配置
+### 2.1 `GET /api/config` - 獲取站點配置
 
 **Request**
 
 - Method：`GET`
 - Path：`/api/config`
-- Headers（可选）：
+- Headers（可選）：
   ```
-  X-Turnstile-Token: <token>   # 当携带时，验证后会回写 X-Turnstile-Verified
+  X-Turnstile-Token: <token>   # 當攜帶時，驗證後會回寫 X-Turnstile-Verified
   X-Turnstile-Verified: <encrypted>
   ```
 
@@ -340,19 +340,19 @@ CORS_ALLOWED_ORIGINS=https://status.example.com,https://admin.example.com
 }
 ```
 
-| 字段                   | 类型           | 说明                                     |
+| 欄位                   | 型別           | 說明                                     |
 | -------------------- | ------------ | -------------------------------------- |
-| `turnstile_enabled`  | boolean      | 站点是否启用人机验证                             |
-| `turnstile_site_key` | string       | Turnstile 前端公钥；前端拿到后渲染 widget          |
-| `verified`           | boolean      | 当前请求是否携带了有效的 `X-Turnstile-Verified`    |
-| `turnstile_verified` | string\|null | 当次验证成功后回写给客户端的"已验证凭证"，客户端应回存并在 1 小时内复用 |
-| `show_long_history`  | boolean      | 是否允许查看超过 1 小时的历史曲线（未登录用户**强制** 1 小时上限） |
+| `turnstile_enabled`  | boolean      | 站點是否啟用人機驗證                             |
+| `turnstile_site_key` | string       | Turnstile 前端公鑰；前端拿到後渲染 widget          |
+| `verified`           | boolean      | 當前請求是否攜帶了有效的 `X-Turnstile-Verified`    |
+| `turnstile_verified` | string\|null | 當次驗證成功後回寫給客戶端的"已驗證憑證"，客戶端應回存並在 1 小時內複用 |
+| `show_long_history`  | boolean      | 是否允許檢視超過 1 小時的歷史曲線（未登入使用者**強制** 1 小時上限） |
 
-> `X-Turnstile-Token` 携带且验证成功时，响应头会同步设置 `X-Turnstile-Verified`（加密串）。
+> `X-Turnstile-Token` 攜帶且驗證成功時，響應頭會同步設定 `X-Turnstile-Verified`（加密串）。
 
 ***
 
-### 2.2 `GET /api/servers` - 获取服务器列表（首页）
+### 2.2 `GET /api/servers` - 獲取伺服器列表（首頁）
 
 **Request**
 
@@ -364,7 +364,7 @@ CORS_ALLOWED_ORIGINS=https://status.example.com,https://admin.example.com
 
 ```json
 {
-  "servers": [ /* Server[]，见 5.1 */ ],
+  "servers": [ /* Server[]，見 5.1 */ ],
   "stats": {
     "total": 10,
     "online": 8,
@@ -385,23 +385,23 @@ CORS_ALLOWED_ORIGINS=https://status.example.com,https://admin.example.com
 }
 ```
 
-| 字段             | 说明                                                                    |
+| 欄位             | 說明                                                                    |
 | -------------- | --------------------------------------------------------------------- |
-| `servers`      | 已合并最新指标的服务器列表（按 `sort_order ASC`），未登录用户**自动过滤** **`is_hidden = '1'`** |
-| `stats`        | 聚合统计：在线阈值 300 秒（5 分钟无上报视为离线）                                          |
-| `regionStats` | 按 ISO 区域码（大写）统计的服务器数                                                  |
-| `sysConfig`    | 当前站点开关，前端据此显示对应 UI                                                    |
+| `servers`      | 已合併最新指標的伺服器列表（按 `sort_order ASC`），未登入使用者**自動過濾** **`is_hidden = '1'`** |
+| `stats`        | 聚合統計：線上閾值 300 秒（5 分鐘無上報視為離線）                                          |
+| `regionStats` | 按 ISO 區域碼（大寫）統計的伺服器數                                                  |
+| `sysConfig`    | 當前站點開關，前端據此顯示對應 UI                                                    |
 
 ***
 
-### 2.3 `GET /api/server` - 获取单台服务器详情
+### 2.3 `GET /api/server` - 獲取單臺伺服器詳情
 
 **Request**
 
 - Method：`GET`
 - Path：`/api/server`
 - Query：
-  - `id`（**必填**）：服务器 UUID
+  - `id`（**必填**）：伺服器 UUID
 - Headers（按需）：同 `/api/servers`
 
 **Response** `200 OK`
@@ -464,22 +464,22 @@ CORS_ALLOWED_ORIGINS=https://status.example.com,https://admin.example.com
 }
 ```
 
-**失败返回**：
+**失敗返回**：
 
 - `400 { "error": "Missing ID" }` 缺少 `id`
-- `404 { "error": "Server not found" }` 不存在 / 被隐藏（未登录访问时）
+- `404 { "error": "Server not found" }` 不存在 / 被隱藏（未登入訪問時）
 
 ***
 
-### 2.4 `GET /api/history/all` - 获取历史指标
+### 2.4 `GET /api/history/all` - 獲取歷史指標
 
 **Request**
 
 - Method：`GET`
 - Path：`/api/history/all`
 - Query：
-  - `id`（**必填**）：服务器 UUID
-  - `hours`（可选，默认 24）：浮点，**最大 168（7 天）**
+  - `id`（**必填**）：伺服器 UUID
+  - `hours`（可選，預設 24）：浮點，**最大 168（7 天）**
 - Headers（按需）：同 `/api/servers`
 
 **Response** `200 OK`
@@ -494,55 +494,55 @@ CORS_ALLOWED_ORIGINS=https://status.example.com,https://admin.example.com
 }
 ```
 
-**采样间隔（自动）**
+**取樣間隔（自動）**
 
-| hours 范围  | 采样点间隔                  |
+| hours 範圍  | 取樣點間隔                  |
 | --------- | ---------------------- |
-| > 168     | 实际取 168h（7 天），步长 80 分钟 |
-| 96 \~ 168 | 60 分钟                  |
-| 48 \~ 96  | 40 分钟                  |
-| 24 \~ 48  | 15 分钟                  |
-| 12 \~ 24  | 10 分钟                  |
-| 6 \~ 12   | 5 分钟                   |
-| 1 \~ 6    | 1 分钟                   |
+| > 168     | 實際取 168h（7 天），步長 80 分鐘 |
+| 96 \~ 168 | 60 分鐘                  |
+| 48 \~ 96  | 40 分鐘                  |
+| 24 \~ 48  | 15 分鐘                  |
+| 12 \~ 24  | 10 分鐘                  |
+| 6 \~ 12   | 5 分鐘                   |
+| 1 \~ 6    | 1 分鐘                   |
 | ≤ 1       | 10 秒                   |
 
-> 历史查询使用 `ROW_NUMBER() OVER (PARTITION BY ts/interval ORDER BY ts)` 取每个采样窗口的第一条。
+> 歷史查詢使用 `ROW_NUMBER() OVER (PARTITION BY ts/interval ORDER BY ts)` 取每個取樣視窗的第一條。
 
-**跨月查询**：当 `cutoff` 早于当月 1 号且存在 `metrics_history_old` 表时，自动 `UNION ALL` 两张表。
+**跨月查詢**：當 `cutoff` 早於當月 1 號且存在 `metrics_history_old` 表時，自動 `UNION ALL` 兩張表。
 
-**缓存**：命中内存缓存时返回 `X-Cache: HIT`，反之 `MISS`。TTL 取决于 `hours`：
+**快取**：命中記憶體快取時返回 `X-Cache: HIT`，反之 `MISS`。TTL 取決於 `hours`：
 
 | hours | TTL   |
 | ----- | ----- |
-| ≥ 120 | 10 分钟 |
-| ≥ 60  | 5 分钟  |
-| ≥ 30  | 3 分钟  |
-| < 30  | 1 分钟  |
+| ≥ 120 | 10 分鐘 |
+| ≥ 60  | 5 分鐘  |
+| ≥ 30  | 3 分鐘  |
+| < 30  | 1 分鐘  |
 
-**未登录限制**：`hours > 1` 时强制 `401`。
+**未登入限制**：`hours > 1` 時強制 `401`。
 
-**数据库升级提示**：当 D1 缺少新字段时返回：
+**資料庫升級提示**：當 D1 缺少新欄位時返回：
 
 ```json
 HTTP 409
 { "code": "DATABASE_UPGRADE_REQUIRED" }
 ```
 
-此时应先调用 [`POST /updateDatabase`](#41-post-updatedatabase---数据库迁移)。
+此時應先呼叫 [`POST /updateDatabase`](#41-post-updatedatabase---資料庫遷移)。
 
 ***
 
-### 2.5 `GET /api/ws` - WebSocket 实时推送
+### 2.5 `GET /api/ws` - WebSocket 即時推送
 
 **Request**
 
-- Method：`GET`（**必须**带 `Upgrade: websocket` Header）
+- Method：`GET`（**必須**帶 `Upgrade: websocket` Header）
 - Path：`/api/ws`
 - Query：
-  - `subscribe`（可选，默认 `all`）：
-    - `all` → 订阅所有服务器的最新指标
-    - `<serverId>` → 只订阅指定服务器
+  - `subscribe`（可選，預設 `all`）：
+    - `all` → 訂閱所有伺服器的最新指標
+    - `<serverId>` → 只訂閱指定伺服器
 
 **Response** `101 Switching Protocols`（WebSocket 握手）
 
@@ -555,9 +555,9 @@ Sec-WebSocket-Key: <base64>
 Sec-WebSocket-Version: 13
 ```
 
-**服务端 → 客户端消息**：
+**服務端 → 客戶端訊息**：
 
-1. 连接成功（Hello）
+1. 連線成功（Hello）
    ```json
    { "type": "hello", "ts": 1737638400000, "subscribed": "all" }
    ```
@@ -565,29 +565,29 @@ Sec-WebSocket-Version: 13
    ```json
    { "type": "ping", "ts": 1737638400000 }
    ```
-3. 指标更新（`/update` 写入后立即广播）
+3. 指標更新（`/update` 寫入後立即廣播）
    ```json
    {
      "type": "update",
      "serverId": "9b2c...",
      "ts": 1737638400000,
-     "data": { /* 见 Server 对象(已 merge metrics) */ }
+     "data": { /* 見 Server 物件(已 merge metrics) */ }
    }
    ```
-   - 当 `subscribe=all` → 接收所有服务器
-   - 当 `subscribe=<serverId>` → 只接收该服务器
+   - 當 `subscribe=all` → 接收所有伺服器
+   - 當 `subscribe=<serverId>` → 只接收該伺服器
 
-**客户端 → 服务端消息**（可选）：
+**客戶端 → 服務端訊息**（可選）：
 
 ```json
-{ "type": "ping" }   // → 服务端回 { "type": "pong", "ts": ... }
-{ "type": "pong" }   // 静默忽略
+{ "type": "ping" }   // → 服務端回 { "type": "pong", "ts": ... }
+{ "type": "pong" }   // 靜默忽略
 ```
 
-**失败返回**：
+**失敗返回**：
 
-- `503 { "error": "WebSocket not enabled", "code": 503 }` —— 未绑定 `METRICS_BROADCASTER` Durable Object
-- `426 Expected WebSocket upgrade request` —— 缺少 `Upgrade: websocket` 头
+- `503 { "error": "WebSocket not enabled", "code": 503 }` —— 未繫結 `METRICS_BROADCASTER` Durable Object
+- `426 Expected WebSocket upgrade request` —— 缺少 `Upgrade: websocket` 頭
 
 **前端使用示例**：
 
@@ -596,18 +596,18 @@ const ws = new WebSocket('wss://status.example.com/api/ws?subscribe=all');
 ws.onmessage = (ev) => {
   const msg = JSON.parse(ev.data);
   if (msg.type === 'update') {
-    // 更新对应 serverId 的卡片
+    // 更新對應 serverId 的卡片
   }
 };
 ```
 
 ***
 
-## 3. 管理端 API（鉴权）
+## 3. 管理端 API（鑑權）
 
 ### 3.1 `POST /admin/api` - 管理操作入口
 
-> 所有管理操作都通过这一个端点 + `action` 字段路由。
+> 所有管理操作都通過這一個端點 + `action` 欄位路由。
 
 **Request**
 
@@ -625,14 +625,14 @@ ws.onmessage = (ev) => {
 
 **Turnstile**：
 
-- 仅 `action: login` 启用 Turnstile 验证（请求头 `X-Turnstile-Token`）
-- 其他 action：**不**走 Turnstile 流程（白名单 bypass）
+- 僅 `action: login` 啟用 Turnstile 驗證（請求頭 `X-Turnstile-Token`）
+- 其他 action：**不**走 Turnstile 流程（白名單 bypass）
 
-**Response**：统一 `200 OK`，`Content-Type: application/json`，具体结构见下文各小节。
+**Response**：統一 `200 OK`，`Content-Type: application/json`，具體結構見下文各小節。
 
 ***
 
-### 3.2 `action: login` - 登录
+### 3.2 `action: login` - 登入
 
 **Request**
 
@@ -644,7 +644,7 @@ ws.onmessage = (ev) => {
 }
 ```
 
-Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 'true'` 时**必填**）
+Header：`X-Turnstile-Token: <token>`（當 `site_options.turnstile_enabled === 'true'` 時**必填**）
 
 **Response 200**
 
@@ -656,7 +656,7 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 }
 ```
 
-**Response 失败**
+**Response 失敗**
 
 - `400 { "error": "Missing username or password" }`
 - `401 { "error": "Invalid username or password" }`
@@ -664,7 +664,7 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 
 ***
 
-### 3.3 `action: get_settings` - 读取全部设置
+### 3.3 `action: get_settings` - 讀取全部設定
 
 **Request**
 
@@ -677,16 +677,16 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 ```json
 {
   "success": true,
-  "settings": { /* Settings 对象，见 5.4 */ },
+  "settings": { /* Settings 物件，見 5.4 */ },
   "api_secret": "<env.API_SECRET>"
 }
 ```
 
-> `api_secret` 仅在 `get_settings` 中返回，方便前端展示/复制。
+> `api_secret` 僅在 `get_settings` 中返回，方便前端展示/複製。
 
 ***
 
-### 3.4 `action: list` - 列出全部服务器（含在线/统计）
+### 3.4 `action: list` - 列出全部伺服器（含線上/統計）
 
 **Request**
 
@@ -699,7 +699,7 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 ```json
 {
   "success": true,
-  "servers": [ /* Server[]，包含 is_hidden、is_online 等所有字段 */ ],
+  "servers": [ /* Server[]，包含 is_hidden、is_online 等所有欄位 */ ],
   "stats": {
     "total": 10,
     "online": 8,
@@ -716,13 +716,13 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 }
 ```
 
-| 字段             | 说明                      |
+| 欄位             | 說明                      |
 | -------------- | ----------------------- |
-| `is_online`    | `true` = 最近 5 分钟内有上报    |
-| `last_updated` | 最近一次上报时间戳（毫秒）           |
-| `stats.avg_*`  | 仅按在线服务器平均，保留 2 位小数（字符串） |
+| `is_online`    | `true` = 最近 5 分鐘內有上報    |
+| `last_updated` | 最近一次上報時間戳（毫秒）           |
+| `stats.avg_*`  | 僅按線上伺服器平均，保留 2 位小數（字串） |
 
-> 注意：本接口**包含** `is_hidden=1` 的服务器（与 `/api/servers` 不同）。
+> 注意：本介面**包含** `is_hidden=1` 的伺服器（與 `/api/servers` 不同）。
 
 ***
 
@@ -734,7 +734,7 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 { "action": "d1_usage" }
 ```
 
-**前置条件**：`site_options.cloudflare_token` 与 `site_options.cloudflare_account_id` 必须已配置。
+**前置條件**：`site_options.cloudflare_token` 與 `site_options.cloudflare_account_id` 必須已配置。
 
 **Response 200**
 
@@ -771,19 +771,19 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 }
 ```
 
-**Response 失败**
+**Response 失敗**
 
-- `400 { "error": "请先配置 Cloudflare Token" }` / `400 { "error": "请先配置 Cloudflare 用户 ID / Account ID" }`
-- `400 { "error": "<Cloudflare GraphQL 错误信息>" }`
+- `400 { "error": "請先配置 Cloudflare Token" }` / `400 { "error": "請先配置 Cloudflare 使用者 ID / Account ID" }`
+- `400 { "error": "<Cloudflare GraphQL 錯誤資訊>" }`
 
-> 通过 Cloudflare GraphQL API（`https://api.cloudflare.com/client/v4/graphql`）查询：
+> 通過 Cloudflare GraphQL API（`https://api.cloudflare.com/client/v4/graphql`）查詢：
 >
 > - `d1AnalyticsAdaptiveGroups`（`rowsRead` / `rowsWritten`）
 > - `workersInvocationsAdaptive`（`requests`）
 
 ***
 
-### 3.6 `action: save_settings` - 保存设置
+### 3.6 `action: save_settings` - 儲存設定
 
 **Request**
 
@@ -822,15 +822,15 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 }
 ```
 
-**字段分类**：
+**欄位分類**：
 
-- `APPEARANCE_FIELDS`（写入 `appearance_options` JSON）：`site_title`、`custom_bg`、`custom_head`、`custom_script`
-- `SITE_FIELDS`（写入 `site_options` JSON）：上表除 appearance 之外的全部
-- 任何未列出的字段会被忽略
+- `APPEARANCE_FIELDS`（寫入 `appearance_options` JSON）：`site_title`、`custom_bg`、`custom_head`、`custom_script`
+- `SITE_FIELDS`（寫入 `site_options` JSON）：上表除 appearance 之外的全部
+- 任何未列出的欄位會被忽略
 
-**特殊处理**：
+**特殊處理**：
 
-- `password`：以**明文**传入；后端用 `crypto.subtle.digest('MD5', ...)` 计算后保存；如传空字符串则**不更新**密码
+- `password`：以**明文**傳入；後端用 `crypto.subtle.digest('MD5', ...)` 計算後儲存；如傳空字串則**不更新**密碼
 
 **Response 200**
 
@@ -838,11 +838,11 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 { "success": true, "message": "updateSuccess" }
 ```
 
-> 副作用：清空 `site_options` 内存缓存，下一次请求会从 DB 重新加载。
+> 副作用：清空 `site_options` 記憶體快取，下一次請求會從 DB 重新載入。
 
 ***
 
-### 3.7 `action: add` - 新增服务器
+### 3.7 `action: add` - 新增伺服器
 
 **Request**
 
@@ -860,15 +860,15 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 }
 ```
 
-**约束**：
+**約束**：
 
-- `name`：1 \~ 100 字符，否则 `400 { "error": "服务器名称无效" }`
-- `server_group`：默认 `Default`
-- `sort_order`：自动 = `MAX(sort_order) + 1`
+- `name`：1 \~ 100 字元，否則 `400 { "error": "伺服器名稱無效" }`
+- `server_group`：預設 `Default`
+- `sort_order`：自動 = `MAX(sort_order) + 1`
 
 ***
 
-### 3.8 `action: edit` - 修改服务器信息
+### 3.8 `action: edit` - 修改伺服器資訊
 
 **Request**
 
@@ -876,9 +876,9 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 {
   "action": "edit",
   "id": "<server UUID>",
-  "name": "HK-01",                   // 可选，1~100 字符
-  "server_group": "HK",               // 默认 "Default"
-  "price": "￥30/月",                  // 字符串
+  "name": "HK-01",                   // 可選，1~100 字元
+  "server_group": "HK",               // 預設 "Default"
+  "price": "￥30/月",                  // 字串
   "expire_date": "2026-12-31",
   "bandwidth": "1Gbps",
   "traffic_limit": "1TB",
@@ -896,14 +896,14 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 { "success": true, "message": "serverUpdated" }
 ```
 
-**Response 失败**
+**Response 失敗**
 
-- `400 { "error": "服务器 ID 无效" }` —— UUID 格式错
-- `500 { "error": "Update failed. Please go to Database Management and click \"Upgrade Database\" to migrate the new field." }` —— DB 缺字段，请先 `/updateDatabase`
+- `400 { "error": "伺服器 ID 無效" }` —— UUID 格式錯
+- `500 { "error": "Update failed. Please go to Database Management and click \"Upgrade Database\" to migrate the new field." }` —— DB 缺欄位，請先 `/updateDatabase`
 
 ***
 
-### 3.9 `action: delete` - 删除服务器
+### 3.9 `action: delete` - 刪除伺服器
 
 **Request**
 
@@ -911,7 +911,7 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 { "action": "delete", "id": "<server UUID>" }
 ```
 
-**副作用**：级联删除该 server 的全部 `metrics_history` 记录。
+**副作用**：級聯刪除該 server 的全部 `metrics_history` 記錄。
 
 **Response 200**
 
@@ -921,7 +921,7 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 
 ***
 
-### 3.10 `action: batch_delete` - 批量删除
+### 3.10 `action: batch_delete` - 批次刪除
 
 **Request**
 
@@ -937,7 +937,7 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 
 ***
 
-### 3.11 `action: save_order` - 保存服务器排序
+### 3.11 `action: save_order` - 儲存伺服器排序
 
 **Request**
 
@@ -945,10 +945,10 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 { "action": "save_order", "orders": ["<uuid1>", "<uuid2>", "<uuid3>"] }
 ```
 
-**说明**：
+**說明**：
 
-- `orders[i]` 表示该 UUID 排序后应为第 `i` 位（`sort_order = i`）
-- 服务端会逐条 `UPDATE sort_order = ? WHERE id = ?`
+- `orders[i]` 表示該 UUID 排序後應為第 `i` 位（`sort_order = i`）
+- 服務端會逐條 `UPDATE sort_order = ? WHERE id = ?`
 
 **Response 200**
 
@@ -958,13 +958,13 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 
 ***
 
-## 4. 系统维护端点
+## 4. 系統維護端點
 
-> 以下端点需 JWT 鉴权（`Authorization: Bearer <token>`），不参与 Turnstile。
+> 以下端點需 JWT 鑑權（`Authorization: Bearer <token>`），不參與 Turnstile。
 
-### 4.1 `POST /updateDatabase` - 数据库迁移
+### 4.1 `POST /updateDatabase` - 資料庫遷移
 
-> 用于老版本升级时补齐 `metrics_history` 与 `servers` 表的字段、并清理废弃 settings。
+> 用於老版本升級時補齊 `metrics_history` 與 `servers` 表的欄位、並清理廢棄 settings。
 
 **Request**
 
@@ -979,24 +979,24 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
   "success": true,
   "message": "databaseUpgradeSuccess",
   "results": [
-    { "name": "metrics_history load -> load_avg 迁移", "success": true, "migrated": 1234, "message": "..." },
+    { "name": "metrics_history load -> load_avg 遷移", "success": true, "migrated": 1234, "message": "..." },
     { "name": "servers 表列更新", "success": true, "added": 5 },
-    { "name": "servers 表多余字段清理", "success": true, "cleaned": 30, "message": "..." },
+    { "name": "servers 表多餘欄位清理", "success": true, "cleaned": 30, "message": "..." },
     { "name": "metrics_history 表列更新", "success": true, "added": 14 },
-    { "name": "metrics_history 写入优化", "success": true, "optimized": 0, "message": "..." },
-    { "name": "废弃 settings key 清理", "success": true, "cleaned": 0 },
-    { "name": "删除弃用的 metrics_aggregated 表", "success": true, "dropped": 0, "message": "..." }
+    { "name": "metrics_history 寫入最佳化", "success": true, "optimized": 0, "message": "..." },
+    { "name": "廢棄 settings key 清理", "success": true, "cleaned": 0 },
+    { "name": "刪除棄用的 metrics_aggregated 表", "success": true, "dropped": 0, "message": "..." }
   ]
 }
 ```
 
-**失败返回**：`500` + `error` 字段（任一步骤抛错时整体失败）。
+**失敗返回**：`500` + `error` 欄位（任一步驟拋錯時整體失敗）。
 
 ***
 
-### 4.2 `POST /rebuild` - 数据库重建
+### 4.2 `POST /rebuild` - 資料庫重建
 
-> **危险操作**：会删除 `servers` / `metrics_history` / `metrics_history_old` / `settings` 全部数据后重建。
+> **危險操作**：會刪除 `servers` / `metrics_history` / `metrics_history_old` / `settings` 全部資料後重建。
 
 **Request**
 
@@ -1012,13 +1012,13 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 
 ***
 
-### 4.3 `GET /__do/health` - Durable Object 健康检查
+### 4.3 `GET /__do/health` - Durable Object 健康檢查
 
 **Request**
 
 - Method：`GET`
 - Path：`/__do/health`
-- Headers：无需鉴权
+- Headers：無需鑑權
 
 **Response 200**
 
@@ -1035,71 +1035,71 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
 
 ***
 
-## 5. 数据结构
+## 5. 資料結構
 
-### 5.1 Server 对象
+### 5.1 Server 物件
 
-| 字段                                            | 类型                 | 说明                        |
+| 欄位                                            | 型別                 | 說明                        |
 | --------------------------------------------- | ------------------ | ------------------------- |
-| `id`                                          | string (UUID)      | 主键                        |
-| `name`                                        | string             | 显示名                       |
-| `server_group`                                | string             | 分组                        |
-| `price`                                       | string             | 价格文本（自由格式）                |
+| `id`                                          | string (UUID)      | 主鍵                        |
+| `name`                                        | string             | 顯示名                       |
+| `server_group`                                | string             | 分組                        |
+| `price`                                       | string             | 價格文本（自由格式）                |
 | `expire_date`                                 | string             | 到期日 `YYYY-MM-DD`          |
-| `bandwidth`                                   | string             | 带宽文本                      |
+| `bandwidth`                                   | string             | 頻寬文本                      |
 | `traffic_limit`                               | string             | 流量上限文本                    |
 | `traffic_calc_type`                           | string             | `total` / 其他              |
 | `reset_day`                                   | number             | 流量重置日 1\~31               |
-| `report_interval`                             | number             | 上报间隔（秒）                   |
+| `report_interval`                             | number             | 上報間隔（秒）                   |
 | `ping_mode`                                   | string             | `http` / `tcp`            |
-| `is_hidden`                                   | string `"0"`/`"1"` | 是否在前台隐藏                   |
+| `is_hidden`                                   | string `"0"`/`"1"` | 是否在前臺隱藏                   |
 | `sort_order`                                  | number             | 排序值（越小越靠前）                |
-| `cpu`                                         | number             | 最新 CPU%（来自最新指标）           |
+| `cpu`                                         | number             | 最新 CPU%（來自最新指標）           |
 | `ram`                                         | number             | 最新 RAM%                   |
 | `disk`                                        | number             | 最新 DISK%                  |
 | `load_avg`                                    | string             | `"x x x"`                 |
 | `net_in_speed`                                | number             | B/s                       |
 | `net_out_speed`                               | number             | B/s                       |
-| `net_rx`                                      | number             | 累计下行字节                    |
-| `net_tx`                                      | number             | 累计上行字节                    |
-| `net_rx_monthly`                              | number             | 当月累计下行字节                  |
-| `net_tx_monthly`                              | number             | 当月累计上行字节                  |
-| `processes`                                   | number             | 进程数                       |
-| `tcp_conn`                                    | number             | TCP 连接数                   |
-| `udp_conn`                                    | number             | UDP 套接字数                  |
-| `ping_ct` / `ping_cu` / `ping_cm` / `ping_bd` | number\|null       | 各运营商延时 (ms)               |
-| `loss_ct` / `loss_cu` / `loss_cm` / `loss_bd` | number\|null       | 各运营商丢包率 (%)               |
+| `net_rx`                                      | number             | 累計下行位元組                    |
+| `net_tx`                                      | number             | 累計上行位元組                    |
+| `net_rx_monthly`                              | number             | 當月累計下行位元組                  |
+| `net_tx_monthly`                              | number             | 當月累計上行位元組                  |
+| `processes`                                   | number             | 程序數                       |
+| `tcp_conn`                                    | number             | TCP 連線數                   |
+| `udp_conn`                                    | number             | UDP 套接字數                  |
+| `ping_ct` / `ping_cu` / `ping_cm` / `ping_bd` | number\|null       | 各運營商延時 (ms)               |
+| `loss_ct` / `loss_cu` / `loss_cm` / `loss_bd` | number\|null       | 各運營商丟包率 (%)               |
 | `ram_total` / `ram_used`                      | number             | MB                        |
 | `swap_total` / `swap_used`                    | number             | MB                        |
 | `disk_total` / `disk_used`                    | number             | MB                        |
-| `cpu_cores`                                   | number             | 逻辑核心数                     |
-| `cpu_info`                                    | string             | CPU 型号                    |
-| `gpu`                                         | number\|null       | GPU 占用%                   |
-| `gpu_info`                                    | string             | GPU 型号                    |
-| `arch`                                        | string             | 架构                        |
-| `os`                                          | string             | OS 名称                     |
-| `region`                                      | string             | 区域代码（大写，兼容 ISO 国家码）         |
-| `ip_v4`                                       | string `"0"`/`"1"` | IPv4 可达性                  |
-| `ip_v6`                                       | string `"0"`/`"1"` | IPv6 可达性                  |
-| `boot_time`                                   | string             | 启动时间（毫秒）                  |
-| `last_updated` / `timestamp`                  | number             | 上报时间戳（毫秒）                 |
-| `is_online`                                   | boolean            | 5 分钟内是否有上报（仅 `list` 接口计算） |
-| `sysConfig`                                   | object             | 站点级开关（仅部分接口附带）            |
+| `cpu_cores`                                   | number             | 邏輯核心數                     |
+| `cpu_info`                                    | string             | CPU 型號                    |
+| `gpu`                                         | number\|null       | GPU 佔用%                   |
+| `gpu_info`                                    | string             | GPU 型號                    |
+| `arch`                                        | string             | 架構                        |
+| `os`                                          | string             | OS 名稱                     |
+| `region`                                      | string             | 區域程式碼（大寫，相容 ISO 國家碼）         |
+| `ip_v4`                                       | string `"0"`/`"1"` | IPv4 可達性                  |
+| `ip_v6`                                       | string `"0"`/`"1"` | IPv6 可達性                  |
+| `boot_time`                                   | string             | 啟動時間（毫秒）                  |
+| `last_updated` / `timestamp`                  | number             | 上報時間戳（毫秒）                 |
+| `is_online`                                   | boolean            | 5 分鐘內是否有上報（僅 `list` 介面計算） |
+| `sysConfig`                                   | object             | 站點級開關（僅部分介面附帶）            |
 
-### 5.2 Metrics 对象（探针上报 payload）
+### 5.2 Metrics 物件（探針上報 payload）
 
-> 见 [§1.1 metrics 字段表](#11-post-update---指标上报agent-入口)。所有数值字段都是**字符串**（除了 `gpu`），方便 Bash 探针组装 JSON。
+> 見 [§1.1 metrics 欄位表](#11-post-update---指標上報agent-入口)。所有數值欄位都是**字串**（除了 `gpu`），方便 Bash 探針組裝 JSON。
 
-### 5.3 History Row 对象
+### 5.3 History Row 物件
 
-| 字段          | 类型             | 说明                                                                                                                                                                                                                                               |
+| 欄位          | 型別             | 說明                                                                                                                                                                                                                                               |
 | ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `timestamp` | number (ms)    | 采样时间                                                                                                                                                                                                                                             |
-| 其余字段        | 视查询 columns 而定 | 当前 `/api/history/all` 固定返回：`cpu, gpu, gpu_info, ram, disk_total, disk_used, processes, net_in_speed, net_out_speed, tcp_conn, udp_conn, ping_ct, ping_cu, ping_cm, ping_bd, loss_ct, loss_cu, loss_cm, loss_bd, swap_total, swap_used, load_avg` |
+| `timestamp` | number (ms)    | 取樣時間                                                                                                                                                                                                                                             |
+| 其餘欄位        | 視查詢 columns 而定 | 當前 `/api/history/all` 固定返回：`cpu, gpu, gpu_info, ram, disk_total, disk_used, processes, net_in_speed, net_out_speed, tcp_conn, udp_conn, ping_ct, ping_cu, ping_cm, ping_bd, loss_ct, loss_cu, loss_cm, loss_bd, swap_total, swap_used, load_avg` |
 
-### 5.4 Settings 对象
+### 5.4 Settings 物件
 
-> `get_settings` 直接返回 `site_options` JSON 的**全部字段**（包括 `jwt_secret`、`cloudflare_token` 等敏感字段！请妥善保存并通过 HTTPS 调用）。
+> `get_settings` 直接返回 `site_options` JSON 的**全部欄位**（包括 `jwt_secret`、`cloudflare_token` 等敏感欄位！請妥善儲存並通過 HTTPS 呼叫）。
 
 ```ts
 {
@@ -1119,44 +1119,44 @@ Header：`X-Turnstile-Token: <token>`（当 `site_options.turnstile_enabled === 
   turnstile_enabled: 'true' | 'false',
   turnstile_site_key: string,
   turnstile_secret_key: string,
-  jwt_secret: string,            // 长度 ≥ 32 才会被用于签 JWT
+  jwt_secret: string,            // 長度 ≥ 32 才會被用於籤 JWT
   username: string,
-  password: string,              // MD5 哈希值
+  password: string,              // MD5 雜湊值
   cloudflare_account_id: string,
   cloudflare_token: string,
-  custom_ct: string,             // 电信测速节点域名
-  custom_cu: string,             // 联通
-  custom_cm: string,             // 移动
+  custom_ct: string,             // 電信測速節點域名
+  custom_cu: string,             // 聯通
+  custom_cm: string,             // 移動
   custom_bd: string,             // BGP
   cleanup_skip_count: string,
   expire_reminder: 'true' | 'false'
 }
 ```
 
-### 5.5 WebSocket 消息
+### 5.5 WebSocket 訊息
 
 | `type`   | 方向    | Payload                                            |
 | -------- | ----- | -------------------------------------------------- |
 | `hello`  | S → C | `{ ts: number, subscribed: string }`               |
 | `ping`   | S → C | `{ ts: number }`                                   |
-| `pong`   | 双向    | `{ ts: number }`                                   |
+| `pong`   | 雙向    | `{ ts: number }`                                   |
 | `update` | S → C | `{ serverId: string, ts: number, data: <Server> }` |
 
 ***
 
-## 6. 定时任务 (Cron)
+## 6. 定時任務 (Cron)
 
-Worker 同时注册了 cron 触发器（`scheduled` handler），可在 `wrangler.toml` 配置：
+Worker 同時註冊了 cron 觸發器（`scheduled` handler），可在 `wrangler.toml` 配置：
 
-| Cron          | 行为              | 备注                                                             |
+| Cron          | 行為              | 備註                                                             |
 | ------------- | --------------- | -------------------------------------------------------------- |
-| `*/1 * * * *` | 每分钟：检测离线节点      | `checkOfflineNodes`（通知）                                        |
-| `0 * * * *`   | 每小时：根据 UTC 日期分支 | 见下表                                                            |
-|               | 每月 1 号 0 点：表轮换  | `monthlyCleanup`（重命名 metrics\_history → metrics\_history\_old） |
-|               | 每月 8 号 0 点：删除旧表 | `dropMetricsHistoryOld`                                        |
-|               | 每天 12 点：服务器到期检测 | `checkExpiringServers`                                         |
+| `*/1 * * * *` | 每分鐘：檢測離線節點      | `checkOfflineNodes`（通知）                                        |
+| `0 * * * *`   | 每小時：根據 UTC 日期分支 | 見下表                                                            |
+|               | 每月 1 號 0 點：表輪換  | `monthlyCleanup`（重新命名 metrics\_history → metrics\_history\_old） |
+|               | 每月 8 號 0 點：刪除舊錶 | `dropMetricsHistoryOld`                                        |
+|               | 每天 12 點：伺服器到期檢測 | `checkExpiringServers`                                         |
 
-DEBUG 模式（`env.DEBUG=1`）下额外提供：
+DEBUG 模式（`env.DEBUG=1`）下額外提供：
 
 - `* * 1 * *` → monthlyCleanup
 - `* * 8 * *` → dropMetricsHistoryOld
@@ -1164,25 +1164,25 @@ DEBUG 模式（`env.DEBUG=1`）下额外提供：
 
 ***
 
-## 7. 错误码速查表
+## 7. 錯誤碼速查表
 
-| code | 名称                    | 触发条件                                        |
+| code | 名稱                    | 觸發條件                                        |
 | ---- | --------------------- | ------------------------------------------- |
-| 400  | Bad Request           | 缺参数 / 非法 UUID / 未知 action / 缺 Cloudflare 配置 |
-| 401  | Unauthorized          | JWT 失败 / Basic 失败 / 站点非公开未登录 / 探针 secret 错  |
-| 403  | Forbidden             | Turnstile 失败                                |
-| 404  | Not Found             | 服务器不存在 / WebSocket DO 未绑定                   |
-| 409  | Conflict              | `DATABASE_UPGRADE_REQUIRED`（D1 缺字段）         |
-| 500  | Internal Server Error | 未捕获异常 / DB 抛错                               |
-| 503  | Service Unavailable   | WebSocket 未启用                               |
+| 400  | Bad Request           | 缺引數 / 非法 UUID / 未知 action / 缺 Cloudflare 配置 |
+| 401  | Unauthorized          | JWT 失敗 / Basic 失敗 / 站點非公開未登入 / 探針 secret 錯  |
+| 403  | Forbidden             | Turnstile 失敗                                |
+| 404  | Not Found             | 伺服器不存在 / WebSocket DO 未繫結                   |
+| 409  | Conflict              | `DATABASE_UPGRADE_REQUIRED`（D1 缺欄位）         |
+| 500  | Internal Server Error | 未捕獲異常 / DB 拋錯                               |
+| 503  | Service Unavailable   | WebSocket 未啟用                               |
 
 ***
 
 ## 8. 完整 cURL 示例
 
-> 假设部署在 `https://status.example.com`，`API_SECRET=abc123`，服务器 ID 为 `9b2c4d3e-1a2b-4c5d-9e8f-7a6b5c4d3e2f`。
+> 假設部署在 `https://status.example.com`，`API_SECRET=abc123`，伺服器 ID 為 `9b2c4d3e-1a2b-4c5d-9e8f-7a6b5c4d3e2f`。
 
-### 8.1 探针上报
+### 8.1 探針上報
 
 ```bash
 curl -X POST https://status.example.com/update \
@@ -1206,31 +1206,31 @@ curl -X POST https://status.example.com/update \
   }'
 ```
 
-### 8.2 公共：获取配置
+### 8.2 公共：獲取配置
 
 ```bash
 curl https://status.example.com/api/config
 ```
 
-### 8.3 公共：首页服务器列表
+### 8.3 公共：首頁伺服器列表
 
 ```bash
 curl https://status.example.com/api/servers
 ```
 
-### 8.4 公共：单台详情
+### 8.4 公共：單臺詳情
 
 ```bash
 curl "https://status.example.com/api/server?id=9b2c4d3e-1a2b-4c5d-9e8f-7a6b5c4d3e2f"
 ```
 
-### 8.5 公共：24h 历史
+### 8.5 公共：24h 歷史
 
 ```bash
 curl "https://status.example.com/api/history/all?id=9b2c4d3e-1a2b-4c5d-9e8f-7a6b5c4d3e2f&hours=24"
 ```
 
-### 8.6 管理：登录
+### 8.6 管理：登入
 
 ```bash
 curl -X POST https://status.example.com/admin/api \
@@ -1249,7 +1249,7 @@ curl -X POST https://status.example.com/admin/api \
   -d '{"action":"list"}'
 ```
 
-### 8.8 管理：添加服务器
+### 8.8 管理：新增伺服器
 
 ```bash
 curl -X POST https://status.example.com/admin/api \
@@ -1258,7 +1258,7 @@ curl -X POST https://status.example.com/admin/api \
   -d '{"action":"add","name":"HK-02","server_group":"HK"}'
 ```
 
-### 8.9 管理：编辑
+### 8.9 管理：編輯
 
 ```bash
 curl -X POST https://status.example.com/admin/api \
@@ -1267,7 +1267,7 @@ curl -X POST https://status.example.com/admin/api \
   -d '{"action":"edit","id":"9b2c4d3e-1a2b-4c5d-9e8f-7a6b5c4d3e2f","price":"￥35/月","expire_date":"2027-01-01"}'
 ```
 
-### 8.10 管理：删除
+### 8.10 管理：刪除
 
 ```bash
 curl -X POST https://status.example.com/admin/api \
@@ -1276,7 +1276,7 @@ curl -X POST https://status.example.com/admin/api \
   -d '{"action":"delete","id":"9b2c4d3e-1a2b-4c5d-9e8f-7a6b5c4d3e2f"}'
 ```
 
-### 8.11 管理：保存设置
+### 8.11 管理：儲存設定
 
 ```bash
 curl -X POST https://status.example.com/admin/api \
@@ -1304,14 +1304,14 @@ curl -X POST https://status.example.com/admin/api \
   -d '{"action":"d1_usage"}'
 ```
 
-### 8.13 系统：数据库迁移
+### 8.13 系統：資料庫遷移
 
 ```bash
 curl -X POST https://status.example.com/updateDatabase \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-### 8.14 健康检查
+### 8.14 健康檢查
 
 ```bash
 curl https://status.example.com/__do/health
@@ -1320,24 +1320,24 @@ curl https://status.example.com/__do/health
 ### 8.15 WebSocket（使用 wscat / websocat）
 
 ```bash
-# 订阅所有服务器
+# 訂閱所有伺服器
 wscat -c "wss://status.example.com/api/ws?subscribe=all"
 
-# 订阅指定服务器
+# 訂閱指定伺服器
 wscat -c "wss://status.example.com/api/ws?subscribe=9b2c4d3e-1a2b-4c5d-9e8f-7a6b5c4d3e2f"
 ```
 
 ***
 
-## 9. 版本与变更说明
+## 9. 版本與變更說明
 
-- **v1.x**：当前文档对应 `src/index.js`、`src/handlers/*`、`src/database/schema.js` 主线实现。
-- **Breaking change**：`/admin/api` 由 `GET?action=...` 改为 `POST {action:...}` 模式，Token 校验与 Turnstile 走 Header 通道。
-- **CORS**：通过 `CORS_ALLOWED_ORIGINS` 环境变量开启；不配置时所有跨域请求会失败。
-- **JWT**：`jwt_secret` 推荐配置为 ≥ 32 位的随机字符串；未配置时回退到 `API_SECRET` 派生，**部署后强烈建议**显式配置。
-- **数据库升级**：升级到新字段（如 `loss_*`、`net_rx_monthly`、`reset_day` 等）后请调用 `POST /updateDatabase`；否则历史接口可能返回 `409 DATABASE_UPGRADE_REQUIRED`。
+- **v1.x**：當前文件對應 `src/index.js`、`src/handlers/*`、`src/database/schema.js` 主線實現。
+- **Breaking change**：`/admin/api` 由 `GET?action=...` 改為 `POST {action:...}` 模式，Token 校驗與 Turnstile 走 Header 通道。
+- **CORS**：通過 `CORS_ALLOWED_ORIGINS` 環境變數開啟；不配置時所有跨域請求會失敗。
+- **JWT**：`jwt_secret` 推薦配置為 ≥ 32 位的隨機字串；未配置時回退到 `API_SECRET` 派生，**部署後強烈建議**顯式配置。
+- **資料庫升級**：升級到新欄位（如 `loss_*`、`net_rx_monthly`、`reset_day` 等）後請呼叫 `POST /updateDatabase`；否則歷史介面可能返回 `409 DATABASE_UPGRADE_REQUIRED`。
 
 ***
 
-> 文档同步：与源码 `src/index.js`、`src/handlers/{admin,dashboard,frontend,update}.js`、`src/durable/MetricsBroadcaster.js`、`src/utils/{auth,settings,errors,cors,cache,metrics,common}.js`、`src/database/{schema,updateDatabase}.js` 一一对应；后续修改任一文件时，请同步更新本文件。
+> 文件同步：與原始碼 `src/index.js`、`src/handlers/{admin,dashboard,frontend,update}.js`、`src/durable/MetricsBroadcaster.js`、`src/utils/{auth,settings,errors,cors,cache,metrics,common}.js`、`src/database/{schema,updateDatabase}.js` 一一對應；後續修改任一檔案時，請同步更新本檔案。
 

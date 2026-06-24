@@ -3,8 +3,8 @@ import { checkServerExists } from '../utils/cache.js';
 import { mergeMetricsIntoServer } from '../utils/metrics.js';
 import { createErrorResponse, createUnauthorizedResponse, createNotFoundResponse } from '../utils/errors.js';
 
-// 将最新一次上报打包成前端可直接消费的 "当前状态" 对象
-// 与 /api/server 和 /api/servers 返回的字段保持一致，便于页面直接合并
+// 將最新一次上報打包成前端可直接消費的 "當前狀態" 物件
+// 與 /api/server 和 /api/servers 返回的欄位保持一致，便於頁面直接合並
 function buildPayloadForBroadcast(id, metrics, extra = {}) {
   const payload = {};
   mergeMetricsIntoServer(payload, metrics);
@@ -15,13 +15,13 @@ function buildPayloadForBroadcast(id, metrics, extra = {}) {
   return payload;
 }
 
-// 内部辅助：向 Durable Object 发送广播
+// 內部輔助：向 Durable Object 傳送廣播
 async function broadcastToDO(env, serverId, payload) {
   if (!env || !env.METRICS_BROADCASTER) return false;
   try {
     const id = env.METRICS_BROADCASTER.idFromName('global');
     const stub = env.METRICS_BROADCASTER.get(id);
-    // 内部调用，不需要鉴权；即使失败也不影响 /update 返回
+    // 內部呼叫，不需要鑑權；即使失敗也不影響 /update 返回
     await stub.fetch(`http://internal/push/${encodeURIComponent(serverId)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -29,7 +29,7 @@ async function broadcastToDO(env, serverId, payload) {
     });
     return true;
   } catch (e) {
-    // 广播失败不应该让客户端收到错误
+    // 廣播失敗不應該讓客戶端收到錯誤
     console.warn('[broadcast] DO push failed:', e.message || e);
     return false;
   }
@@ -63,7 +63,7 @@ export async function handleUpdate(request, env, ctx) {
   }
 }
 
-// 暴露给 index.js 路由使用的 WebSocket 接入函数
+// 暴露給 index.js 路由使用的 WebSocket 接入函式
 export async function handleWebSocketUpgrade(request, env) {
   if (!env || !env.METRICS_BROADCASTER) {
     return new Response(JSON.stringify({ error: 'WebSocket not enabled', code: 503 }), {
@@ -77,7 +77,7 @@ export async function handleWebSocketUpgrade(request, env) {
   try {
     const id = env.METRICS_BROADCASTER.idFromName('global');
     const stub = env.METRICS_BROADCASTER.get(id);
-    // 使用原始 request 构造新的内部请求，保留 WebSocket 升级语义
+    // 使用原始 request 構造新的內部請求，保留 WebSocket 升級語義
     return await stub.fetch(new Request(`http://internal/ws${qs}`, request));
   } catch (e) {
     console.error('[ws] DO upgrade failed:', e);

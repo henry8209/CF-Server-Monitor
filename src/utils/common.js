@@ -1,13 +1,13 @@
 /**
- * 公共工具函数模块
- * 统一存放各处重复定义的函数
+ * 公共工具函式模組
+ * 統一存放各處重複定義的函式
  */
 
 /**
- * 验证 Turnstile token
+ * 驗證 Turnstile token
  * @param {string} token - Turnstile token
  * @param {string} secretKey - Turnstile secret key
- * @returns {Promise<boolean>} 验证结果
+ * @returns {Promise<boolean>} 驗證結果
  */
 export async function verifyTurnstileToken(token, secretKey) {
   if (!token || !secretKey) {
@@ -35,9 +35,9 @@ export async function verifyTurnstileToken(token, secretKey) {
 }
 
 /**
- * 计算 MD5 哈希值
- * @param {string} input - 输入字符串
- * @returns {Promise<string>} MD5 哈希值
+ * 計算 MD5 雜湊值
+ * @param {string} input - 輸入字串
+ * @returns {Promise<string>} MD5 雜湊值
  */
 export async function md5Hash(input) {
   const encoder = new TextEncoder();

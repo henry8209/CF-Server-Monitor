@@ -13,7 +13,7 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     emptyOutDir: true,
-    // 确保静态资源被正确处理
+    // 確保靜態資源被正確處理
     rollupOptions: {
       output: {
         entryFileNames: 'assets/[name]-[hash].js',
