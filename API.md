@@ -812,10 +812,10 @@ Header：`X-Turnstile-Token: <token>`（當 `site_options.turnstile_enabled === 
     "password": "<plain text, will be MD5-hashed before save>",
     "cloudflare_account_id": "",
     "cloudflare_token": "",
-    "custom_ct": "gd-ct-dualstack.ip.zstaticcdn.com",
-    "custom_cu": "gd-cu-dualstack.ip.zstaticcdn.com",
-    "custom_cm": "gd-cm-dualstack.ip.zstaticcdn.com",
-    "custom_bd": "lf3-ips.zstaticcdn.com",
+    "custom_ct": "1.1.1.1",
+    "custom_cu": "8.8.8.8",
+    "custom_cm": "208.67.222.222",
+    "custom_bd": "9.9.9.9",
     "cleanup_skip_count": "0",
     "expire_reminder": "false"
   }

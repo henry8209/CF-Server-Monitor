@@ -40,10 +40,10 @@ DEFAULT_CONFIG = {
     "ping_type": "tcp",
 }
 
-CT_NODE = "gd-ct-dualstack.ip.zstaticcdn.com"
-CU_NODE = "gd-cu-dualstack.ip.zstaticcdn.com"
-CM_NODE = "gd-cm-dualstack.ip.zstaticcdn.com"
-BD_NODE = "lf3-ips.zstaticcdn.com"
+CT_NODE = "1.1.1.1"
+CU_NODE = "8.8.8.8"
+CM_NODE = "208.67.222.222"
+BD_NODE = "9.9.9.9"
 
 log_queue = queue.Queue()
 stop_event = threading.Event()

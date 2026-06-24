@@ -424,23 +424,23 @@
               <div class="form-row">
                 <div class="form-group flex-1">
                   <label class="form-label">{{ trans.customCt }}</label>
-                  <input type="text" v-model="settings.custom_ct" class="form-input" placeholder="gd-ct-dualstack.ip.zstaticcdn.com">
+                  <input type="text" v-model="settings.custom_ct" class="form-input" placeholder="1.1.1.1">
                 </div>
 
                 <div class="form-group flex-1">
                   <label class="form-label">{{ trans.customCu }}</label>
-                  <input type="text" v-model="settings.custom_cu" class="form-input" placeholder="gd-cu-dualstack.ip.zstaticcdn.com">
+                  <input type="text" v-model="settings.custom_cu" class="form-input" placeholder="8.8.8.8">
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-group flex-1">
                   <label class="form-label">{{ trans.customCm }}</label>
-                  <input type="text" v-model="settings.custom_cm" class="form-input" placeholder="gd-cm-dualstack.ip.zstaticcdn.com">
+                  <input type="text" v-model="settings.custom_cm" class="form-input" placeholder="208.67.222.222">
                 </div>
 
                 <div class="form-group flex-1">
                   <label class="form-label">{{ trans.customBd }}</label>
-                  <input type="text" v-model="settings.custom_bd" class="form-input" placeholder="lf3-ips.zstaticcdn.com">
+                  <input type="text" v-model="settings.custom_bd" class="form-input" placeholder="9.9.9.9">
                 </div>
               </div>
             </div>
@@ -627,22 +627,22 @@
           <div class="form-row">
             <div class="form-group flex-1">
               <label class="form-label">{{ trans.customCt }}</label>
-              <input type="text" name="custom_ct" autocomplete="off" v-model="customCt" class="form-input" placeholder="gd-ct-dualstack.ip.zstaticcdn.com">
+              <input type="text" name="custom_ct" autocomplete="off" v-model="customCt" class="form-input" placeholder="1.1.1.1">
             </div>
             <div class="form-group flex-1">
               <label class="form-label">{{ trans.customCu }}</label>
-              <input type="text" name="custom_cu" autocomplete="off" v-model="customCu" class="form-input" placeholder="gd-cu-dualstack.ip.zstaticcdn.com">
+              <input type="text" name="custom_cu" autocomplete="off" v-model="customCu" class="form-input" placeholder="8.8.8.8">
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group flex-1">
               <label class="form-label">{{ trans.customCm }}</label>
-              <input type="text" name="custom_cm" autocomplete="off" v-model="customCm" class="form-input" placeholder="gd-cm-dualstack.ip.zstaticcdn.com">
+              <input type="text" name="custom_cm" autocomplete="off" v-model="customCm" class="form-input" placeholder="208.67.222.222">
             </div>
             <div class="form-group flex-1">
               <label class="form-label">{{ trans.customBd }}</label>
-              <input type="text" name="custom_bd" autocomplete="off" v-model="customBd" class="form-input" placeholder="lf3-ips.zstaticcdn.com">
+              <input type="text" name="custom_bd" autocomplete="off" v-model="customBd" class="form-input" placeholder="9.9.9.9">
             </div>
           </div>
 
