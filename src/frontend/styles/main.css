@@ -58,7 +58,7 @@
 }
 
 body {
-    font-family: var(--terminal-font);
+    font-family: 'Microsoft YaHei', '微软雅黑', var(--terminal-font);
     background: var(--bg-primary);
     color: var(--text-primary);
     min-height: 100vh;
