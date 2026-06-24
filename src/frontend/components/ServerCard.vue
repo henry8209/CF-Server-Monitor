@@ -65,19 +65,19 @@
     </div>
     <div class="ping-panel">
       <div class="ping-item">
-        <span class="ping-label">CT</span>
+        <span class="ping-label">CF</span>
         <span class="ping-value" :style="{ color: getPingColor(server.ping_ct) }">{{ !isPingValid(server.ping_ct) ? trans.timeout : server.ping_ct + 'ms' }}</span>
       </div>
       <div class="ping-item">
-        <span class="ping-label">CU</span>
+        <span class="ping-label">GO</span>
         <span class="ping-value" :style="{ color: getPingColor(server.ping_cu) }">{{ !isPingValid(server.ping_cu) ? trans.timeout : server.ping_cu + 'ms' }}</span>
       </div>
       <div class="ping-item">
-        <span class="ping-label">CM</span>
+        <span class="ping-label">OP</span>
         <span class="ping-value" :style="{ color: getPingColor(server.ping_cm) }">{{ !isPingValid(server.ping_cm) ? trans.timeout : server.ping_cm + 'ms' }}</span>
       </div>
       <div class="ping-item">
-        <span class="ping-label">BD</span>
+        <span class="ping-label">Q9</span>
         <span class="ping-value" :style="{ color: getPingColor(server.ping_bd) }">{{ !isPingValid(server.ping_bd) ? trans.timeout : server.ping_bd + 'ms' }}</span>
       </div>
     </div>
