@@ -978,10 +978,10 @@ class ProbeGUI:
         )
         self.ping_label.config(
             text=(
-                f"電信 {metrics.get('ping_ct', '') or '-'}ms  "
-                f"聯通 {metrics.get('ping_cu', '') or '-'}ms  "
-                f"移動 {metrics.get('ping_cm', '') or '-'}ms  "
-                f"BGP {metrics.get('ping_bd', '') or '-'}ms"
+                f"CF {metrics.get('ping_ct', '') or '-'}ms  "
+                f"GO {metrics.get('ping_cu', '') or '-'}ms  "
+                f"OP {metrics.get('ping_cm', '') or '-'}ms  "
+                f"Q9 {metrics.get('ping_bd', '') or '-'}ms"
             )
         )
 

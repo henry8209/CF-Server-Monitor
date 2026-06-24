@@ -281,14 +281,14 @@ CORS_ALLOWED_ORIGINS=https://status.example.com,https://admin.example.com
 | `udp_conn`       | string       | -   | 是  | UDP 套接字數                                    |
 | `ip_v4`          | string       | -   | 是  | `1`/`0`，IPv4 可達性                            |
 | `ip_v6`          | string       | -   | 是  | `1`/`0`，IPv6 可達性                            |
-| `ping_ct`        | string       | ms  | 否  | 電信節點延時，**空字串表示未取到**                        |
-| `ping_cu`        | string       | ms  | 否  | 聯通節點延時                                      |
-| `ping_cm`        | string       | ms  | 否  | 移動節點延時                                      |
-| `ping_bd`        | string       | ms  | 否  | BGP 節點延時                                    |
-| `loss_ct`        | string       | %   | 否  | 電信丟包率                                       |
-| `loss_cu`        | string       | %   | 否  | 聯通丟包率                                       |
-| `loss_cm`        | string       | %   | 否  | 移動丟包率                                       |
-| `loss_bd`        | string       | %   | 否  | BGP 丟包率                                     |
+| `ping_ct`        | string       | ms  | 否  | CF 節點延時，**空字串表示未取到**                        |
+| `ping_cu`        | string       | ms  | 否  | GO 節點延時                                      |
+| `ping_cm`        | string       | ms  | 否  | OP 節點延時                                      |
+| `ping_bd`        | string       | ms  | 否  | Q9 節點延時                                      |
+| `loss_ct`        | string       | %   | 否  | CF 丟包率                                       |
+| `loss_cu`        | string       | %   | 否  | GO 丟包率                                       |
+| `loss_cm`        | string       | %   | 否  | OP 丟包率                                       |
+| `loss_bd`        | string       | %   | 否  | Q9 丟包率                                       |
 
 **Response**
 
@@ -1124,10 +1124,10 @@ Header：`X-Turnstile-Token: <token>`（當 `site_options.turnstile_enabled === 
   password: string,              // MD5 雜湊值
   cloudflare_account_id: string,
   cloudflare_token: string,
-  custom_ct: string,             // 電信測速節點域名
-  custom_cu: string,             // 聯通
-  custom_cm: string,             // 移動
-  custom_bd: string,             // BGP
+  custom_ct: string,             // CF 測試節點域名
+  custom_cu: string,             // GO
+  custom_cm: string,             // OP
+  custom_bd: string,             // Q9
   cleanup_skip_count: string,
   expire_reminder: 'true' | 'false'
 }
