@@ -24,8 +24,9 @@
       <div class="host-card-header">
         <div class="host-name">
           <span class="prompt">root@</span>
-          <span v-if="server.region && server.region !== 'xx'">
-          <img :src="'https://flagcdn.com/24x18/' + getFlagRegionCode(server.region) + '.png'" :alt="server.region" class="flag-img" style="margin-right:6px;">
+          <span v-if="server.region && server.region !== 'xx'" style="display: inline-flex; align-items: center;">
+          <img :src="'https://flagcdn.com/24x18/' + getFlagRegionCode(server.region) + '.png'" :alt="server.region" class="flag-img" style="margin-right:3px;">
+          <span v-if="getRegionLabel(server.region)" style="font-size:10px; line-height:1; color:var(--text-muted); margin-right:6px;">{{ getRegionLabel(server.region) }}</span>
         </span>
           <span v-else>🏳️</span>
           <span>{{ server.name || 'Loading...' }}</span>
@@ -279,7 +280,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TerminalHeader from '../components/TerminalHeader.vue'
 import Footer from '../components/Footer.vue'
-import { fetchServerDetail, fetchAllHistory, formatBytes, isAdminLoggedIn, createLiveSocket, getFlagRegionCode, getApiBases } from '../utils/api.js'
+import { fetchServerDetail, fetchAllHistory, formatBytes, isAdminLoggedIn, createLiveSocket, getFlagRegionCode, getRegionLabel, getApiBases } from '../utils/api.js'
 import Chart from 'chart.js/auto'
 import 'chartjs-adapter-date-fns'
 import { t, currentLang, translations } from '../utils/i18n'

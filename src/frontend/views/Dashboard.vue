@@ -36,6 +36,7 @@
         >
           <span v-if="code === 'unknown'" class="filter-tag-icon">🏳️</span>
           <img v-else-if="code !== 'all'" :src="'https://flagcdn.com/16x12/' + getFlagRegionCode(code) + '.png'" :alt="code">
+          <span v-if="code !== 'all' && code !== 'unknown' && getRegionLabel(code)" style="font-size:10px; margin-right:2px; color:var(--text-muted);">{{ getRegionLabel(code) }}</span>
           {{ code === 'all' ? '[' + trans.all + ']' : code === 'unknown' ? 'UNKNOWN' : code.toUpperCase() }} {{ count }}
         </span>
       </div>
@@ -128,8 +129,9 @@
               </td>
               <td><b>{{ server.name }}</b></td>
               <td>
-                <span v-if="server.region && server.region !== 'xx'">
-                  <img :src="'https://flagcdn.com/24x18/' + getFlagRegionCode(server.region) + '.png'" :alt="server.region" class="flag-img">
+                <span v-if="server.region && server.region !== 'xx'" style="display: inline-flex; align-items: center;">
+                  <img :src="'https://flagcdn.com/24x18/' + getFlagRegionCode(server.region) + '.png'" :alt="server.region" class="flag-img" style="margin-right:3px;">
+                  <span v-if="getRegionLabel(server.region)" style="font-size:10px; line-height:1; color:var(--text-muted); margin-right:2px;">{{ getRegionLabel(server.region) }}</span>
                 </span>
                 <span v-else>🏳️</span>
                 {{ (server.region || 'XX').toUpperCase() }}
@@ -193,7 +195,7 @@ import { useRouter } from 'vue-router'
 import TerminalHeader from '../components/TerminalHeader.vue'
 import ServerCard from '../components/ServerCard.vue'
 import Footer from '../components/Footer.vue'
-import { fetchServers, fetchServersAll, formatBytes, createLiveSocket, getFlagRegionCode, getApiBases } from '../utils/api.js'
+import { fetchServers, fetchServersAll, formatBytes, createLiveSocket, getFlagRegionCode, getRegionLabel, getApiBases } from '../utils/api.js'
 import { t, currentLang } from '../utils/i18n.js'
 import { translations } from '../utils/i18n.js'
 import { TIME } from '../utils/constants'

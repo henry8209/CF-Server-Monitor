@@ -119,8 +119,18 @@ export const createLiveSocket = (subscribe, handlers = {}, apiIndex = 0) => {
 
 export const getFlagRegionCode = (region) => {
   const code = (region || '').toUpperCase()
-  if (code === 'TW' || code === 'HK' || code === 'MO') return 'cn'
+  if (code === 'MO') return 'cn'
+  if (code === 'TW') return 'cn'
+  if (code === 'HK') return 'hk'
   return code.toLowerCase()
+}
+
+export const getRegionLabel = (region) => {
+  const code = (region || '').toUpperCase()
+  if (code === 'HK') return 'HK'
+  if (code === 'TW') return 'TW'
+  if (code === 'MO') return 'MO'
+  return ''
 }
 
 export const formatBytes = (bytes) => {
