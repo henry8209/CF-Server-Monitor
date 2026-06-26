@@ -221,7 +221,8 @@ const sysConfig = ref({
 const regionStats = ref({})
 const currentView = ref('card')
 const currentFilter = ref('all')
-const selectedGroups = ref(new Set())
+const savedGroups = localStorage.getItem('monitor_selected_groups')
+const selectedGroups = ref(new Set(savedGroups ? JSON.parse(savedGroups) : []))
 const mapInitialized = ref(false)
 const liveConnected = ref(false)
 const isLoading = ref(true)
@@ -278,6 +279,7 @@ const toggleGroup = (name) => {
     set.add(name)
   }
   selectedGroups.value = new Set(set)
+  localStorage.setItem('monitor_selected_groups', JSON.stringify([...selectedGroups.value]))
 }
 
 const switchView = (viewName) => {
