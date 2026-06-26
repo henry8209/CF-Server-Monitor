@@ -39,6 +39,16 @@
           {{ code === 'all' ? '[' + trans.all + ']' : code === 'unknown' ? 'UNKNOWN' : code.toUpperCase() }} {{ count }}
         </span>
       </div>
+      <div class="group-filter-bar" v-if="availableGroups.length > 1">
+        <span class="group-filter-label"># groups:</span>
+        <span
+          v-for="group in availableGroups"
+          :key="group"
+          class="group-filter-tag"
+          :class="{ active: selectedGroups.size === 0 || selectedGroups.has(group) }"
+          @click="toggleGroup(group)"
+        >{{ group }}</span>
+      </div>
     </div>
 
     <div class="global-stats">
@@ -211,6 +221,7 @@ const sysConfig = ref({
 const regionStats = ref({})
 const currentView = ref('card')
 const currentFilter = ref('all')
+const selectedGroups = ref(new Set())
 const mapInitialized = ref(false)
 const liveConnected = ref(false)
 const isLoading = ref(true)
@@ -231,6 +242,12 @@ const filterOptions = computed(() => {
   return opts
 })
 
+const availableGroups = computed(() => {
+  const groups = new Set()
+  servers.value.forEach(s => groups.add(s.server_group || 'Default'))
+  return [...groups]
+})
+
 const filteredServers = computed(() => {
   if (currentFilter.value === 'all') return servers.value
   if (currentFilter.value === 'unknown') return servers.value.filter(s => !s.region)
@@ -240,8 +257,10 @@ const filteredServers = computed(() => {
 const groupedServers = computed(() => {
   const groups = {}
   const order = []
+  const hasSelection = selectedGroups.value.size > 0
   filteredServers.value.forEach(server => {
     const groupName = server.server_group || 'Default'
+    if (hasSelection && !selectedGroups.value.has(groupName)) return
     if (!groups[groupName]) {
       groups[groupName] = []
       order.push(groupName)
@@ -250,6 +269,16 @@ const groupedServers = computed(() => {
   })
   return order.map(name => ({ name, servers: groups[name] }))
 })
+
+const toggleGroup = (name) => {
+  const set = selectedGroups.value
+  if (set.has(name)) {
+    set.delete(name)
+  } else {
+    set.add(name)
+  }
+  selectedGroups.value = new Set(set)
+}
 
 const switchView = (viewName) => {
   currentView.value = viewName
@@ -645,3 +674,37 @@ onUnmounted(() => {
   if (themeObserver) themeObserver.disconnect()
 })
 </script>
+
+<style scoped>
+.group-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.group-filter-label {
+  font-size: 12px;
+  opacity: 0.6;
+  margin-right: 2px;
+}
+.group-filter-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 12px;
+  border: 1px solid var(--border-color, #444);
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.15s, background 0.15s;
+}
+.group-filter-tag.active {
+  opacity: 1;
+  background: var(--accent-cyan, #0ff);
+  color: var(--bg-primary, #000);
+  border-color: var(--accent-cyan, #0ff);
+}
+.group-filter-tag:hover {
+  opacity: 0.8;
+}
+</style>
