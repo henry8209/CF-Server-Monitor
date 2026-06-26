@@ -146,9 +146,8 @@
                   <td class="table-center-cell"><input type="checkbox" class="server-checkbox" :value="server.id" v-model="selectedServers"></td>
                   <td>
                     <div class="server-info">
-                      <span v-if="server.region && server.region !== 'xx'" style="display: inline-flex; align-items: center;">
-                        <img :src="'https://flagcdn.com/24x18/' + getFlagRegionCode(server.region) + '.png'" :alt="server.region" class="flag-img" style="margin-right:3px;">
-                        <span v-if="getRegionLabel(server.region)" style="font-size:10px; line-height:1; color:var(--text-muted); margin-right:2px;">{{ getRegionLabel(server.region) }}</span>
+                      <span v-if="server.region && server.region !== 'xx'">
+                        <img :src="'https://flagcdn.com/24x18/' + getFlagRegionCode(server.region) + '.png'" :alt="server.region" class="flag-img">
                       </span>
                       <span v-else>🏳️</span>
                       <router-link :to="'/server/' + server.id" class="server-name-link">{{ server.name }}</router-link>
@@ -865,7 +864,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import TerminalHeader from '../components/TerminalHeader.vue'
 import Footer from '../components/Footer.vue'
-import { adminApi, login, logout as apiLogout, formatBytes, upgradeDatabase, rebuildDatabase, getFlagRegionCode, getRegionLabel, getApiBase, getApiBases } from '../utils/api'
+import { adminApi, login, logout as apiLogout, formatBytes, upgradeDatabase, rebuildDatabase, getFlagRegionCode, getApiBase, getApiBases } from '../utils/api'
 import { t, currentLang } from '../utils/i18n'
 import { translations } from '../utils/i18n'
 import { http } from '../utils/http'

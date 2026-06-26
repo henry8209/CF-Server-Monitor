@@ -125,14 +125,6 @@ export const getFlagRegionCode = (region) => {
   return code.toLowerCase()
 }
 
-export const getRegionLabel = (region) => {
-  const code = (region || '').toUpperCase()
-  if (code === 'HK') return 'HK'
-  if (code === 'TW') return 'TW'
-  if (code === 'MO') return 'MO'
-  return ''
-}
-
 export const formatBytes = (bytes) => {
   bytes = parseFloat(bytes) || 0
   if (bytes === 0) return '0 B'

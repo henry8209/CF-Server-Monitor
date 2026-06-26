@@ -3,10 +3,8 @@
     <div class="server-card-header">
       <div class="server-identity">
         <div class="status-indicator" :style="{ background: statusColor, boxShadow: '0 0 8px ' + statusColor }"></div>
-        <span v-if="regionCode !== 'xx'" style="display: inline-flex; align-items: center;">
-          <img :src="'https://flagcdn.com/24x18/' + regionCode + '.png'" :alt="regionCode" style="vertical-align: middle; margin-right: 3px; border-radius: 2px; filter: brightness(0.9);">
-          <span v-if="getRegionLabel(server.region)" style="font-size:10px; line-height:1; color:var(--text-muted);">{{ getRegionLabel(server.region) }}</span>
-          <span style="margin-right:5px;"></span>
+        <span v-if="regionCode !== 'xx'">
+          <img :src="'https://flagcdn.com/24x18/' + regionCode + '.png'" :alt="regionCode" style="vertical-align: middle; margin-right: 5px; border-radius: 2px; filter: brightness(0.9);">
         </span>
         <span v-else>🏳️</span>
         <span class="server-name">{{ server.name }}</span>
@@ -88,7 +86,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { formatBytes, getFlagRegionCode, getRegionLabel } from '../utils/api'
+import { formatBytes, getFlagRegionCode } from '../utils/api'
 import { t, currentLang } from '../utils/i18n'
 import { translations } from '../utils/i18n'
 import { TIME, PING } from '../utils/constants'
